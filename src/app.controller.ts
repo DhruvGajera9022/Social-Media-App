@@ -9,9 +9,4 @@ export class AppController {
     private readonly appService: AppService,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
-
-  @Get()
-  getHello() {
-    this.logger.info('Hello world');
-  }
 }
