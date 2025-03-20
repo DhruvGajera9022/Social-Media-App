@@ -14,13 +14,22 @@ datasource db {
 }
 
 model Users {
-  id              Int      @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   firstName       String
   lastName        String
-  email           String   @unique
+  email           String         @unique
   password        String
-  role            String   @default("User")
+  role            String         @default("User")
   profile_picture String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  RefreshToken    RefreshToken[]
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  token      String
+  userId     Int      @unique
+  user       Users    @relation(fields: [userId], references: [id])
+  expiryDate DateTime
 }
