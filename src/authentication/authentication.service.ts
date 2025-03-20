@@ -9,6 +9,7 @@ import { RegisterDTO } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { LoginDTO } from './dto/login.dto';
 import { v4 as uuIdv4 } from 'uuid';
+import { RefreshTokenDTO } from './dto/refresh-token.dto';
 
 @Injectable()
 export class AuthenticationService {
@@ -103,5 +104,38 @@ export class AuthenticationService {
       accessToken,
       refreshToken,
     };
+  }
+
+  // Handle the refresh tokens
+  async refreshTokens(refreshTokenDto: RefreshTokenDTO) {
+    const { token } = refreshTokenDto;
+
+    // Fetch and validate refresh token
+    const fetchRefreshToken = await this.prisma.refreshToken.findFirst({
+      where: {
+        token,
+        expiryDate: { gte: new Date() },
+      },
+    });
+
+    if (!fetchRefreshToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // Generate new tokens
+    const { accessToken, refreshToken } = await this.generateUserTokens(
+      fetchRefreshToken.userId,
+    );
+
+    // Update refresh token in database
+    await this.prisma.refreshToken.update({
+      where: { id: fetchRefreshToken.id },
+      data: {
+        token: refreshToken,
+        expiryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+      },
+    });
+
+    return { accessToken, refreshToken };
   }
 }
