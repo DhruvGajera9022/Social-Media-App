@@ -12,7 +12,6 @@ import { Role } from 'src/authentication/enum/role.enum';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -23,6 +22,13 @@ export class UsersController {
     return this.usersService.users();
   }
 
+  // Get user by id
+  @Get(':id')
+  userById(@Param('id') id: string) {
+    return this.usersService.userById(+id);
+  }
+
+  // Delete user by id
   @Delete(':id')
   delete(@Param('id') id: string) {
     return this.usersService.delete(+id);
