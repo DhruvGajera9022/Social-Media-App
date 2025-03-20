@@ -1,15 +1,7 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Delete, Get, Param, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Roles } from 'src/authentication/decorator/roles.decorator';
 import { Role } from 'src/authentication/enum/role.enum';
-import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -20,6 +12,25 @@ export class UsersController {
   @Roles(Role.Admin)
   users() {
     return this.usersService.users();
+  }
+
+  // Search user
+  @Get('search')
+  searchUser(
+    @Query('firstName') firstName: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    if (!firstName) {
+      return {
+        message: 'Please provide a first name to search.',
+      };
+    }
+
+    const pageNumber = +page || 1;
+    const pageSize = +limit || 10;
+
+    return this.usersService.searchUser(firstName, pageNumber, pageSize);
   }
 
   // Get user by id

@@ -20,6 +20,39 @@ export class UsersService {
     return user;
   }
 
+  // Search user
+  async searchUser(firstName: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const users = await this.prisma.users.findMany({
+      where: {
+        firstName: {
+          contains: firstName,
+          mode: 'insensitive',
+        },
+      },
+      skip,
+      take: limit,
+    });
+
+    const totalUsers = await this.prisma.users.count({
+      where: {
+        firstName: {
+          contains: firstName,
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    return {
+      page,
+      limit,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      users,
+    };
+  }
+
   // delete user
   async delete(id: number) {
     return this.prisma.users.delete({
