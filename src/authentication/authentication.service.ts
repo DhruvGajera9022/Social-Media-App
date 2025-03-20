@@ -8,6 +8,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterDTO } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { LoginDTO } from './dto/login.dto';
+import { v4 as uuIdv4 } from 'uuid';
 
 @Injectable()
 export class AuthenticationService {
@@ -49,6 +50,18 @@ export class AuthenticationService {
     return result;
   }
 
+  // Generate tokens
+  async generateUserTokens(userId: number) {
+    // generate jwt token
+    const accessToken = this.jwtService.sign({ userId });
+    const refreshToken = uuIdv4();
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
   // Handle the user login
   async login(loginDto: LoginDTO) {
     const { email, password } = loginDto;
@@ -67,11 +80,28 @@ export class AuthenticationService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // generate jwt token
-    const token = this.jwtService.sign({ userId: user.id });
+    const { accessToken, refreshToken } = await this.generateUserTokens(
+      user.id,
+    );
+
+    // Store refresh token in database
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 3);
+
+    await this.prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiryDate,
+      },
+    });
 
     // remove the password from the response
     const { password: _, ...result } = user;
-    return { ...result, token };
+    return {
+      ...result,
+      accessToken,
+      refreshToken,
+    };
   }
 }
