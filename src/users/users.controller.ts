@@ -1,7 +1,16 @@
-import { Controller, Delete, Get, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Roles } from 'src/authentication/decorator/roles.decorator';
 import { Role } from 'src/authentication/enum/role.enum';
+import { UpdateUserDTO } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -10,13 +19,13 @@ export class UsersController {
   // Get all users
   @Get()
   @Roles(Role.Admin)
-  users() {
+  async users() {
     return this.usersService.users();
   }
 
   // Search user
   @Get('search')
-  searchUser(
+  async searchUser(
     @Query('firstName') firstName: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -35,13 +44,22 @@ export class UsersController {
 
   // Get user by id
   @Get(':id')
-  userById(@Param('id') id: string) {
+  async userById(@Param('id') id: string) {
     return this.usersService.userById(+id);
+  }
+
+  // Update user by id
+  @Put(':id')
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDTO,
+  ) {
+    return this.usersService.updateUser(+id, updateUserDto);
   }
 
   // Delete user by id
   @Delete(':id')
-  delete(@Param('id') id: string) {
+  async delete(@Param('id') id: string) {
     return this.usersService.delete(+id);
   }
 }
