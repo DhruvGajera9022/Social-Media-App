@@ -10,8 +10,8 @@ export class MailService {
       host: 'smtp.ethereal.email',
       port: 587,
       auth: {
-        user: 'serena.nolan95@ethereal.email',
-        pass: '9K7aRTTJJEEZzHDZcG',
+        user: 'eliezer99@ethereal.email',
+        pass: 'mwfWahDbs8dHJ283Yu',
       },
     });
   }

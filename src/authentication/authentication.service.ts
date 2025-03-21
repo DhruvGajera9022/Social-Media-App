@@ -185,7 +185,7 @@ export class AuthenticationService {
     });
     if (user) {
       const expiryDate = new Date();
-      expiryDate.setUTCHours(expiryDate.getUTCHours() + 10);
+      expiryDate.setUTCHours(expiryDate.getUTCHours() + 1);
 
       // if user exists, generates password reset link
       const resetToken = nanoid(64);
@@ -211,7 +211,7 @@ export class AuthenticationService {
     const { resetToken, newPassword } = resetPasswordDto;
 
     // fetch token from the database
-    const token = await this.prisma.refreshToken.findFirst({
+    const token = await this.prisma.resetToken.findFirst({
       where: {
         token: resetToken,
         expiryDate: { gte: new Date() },
