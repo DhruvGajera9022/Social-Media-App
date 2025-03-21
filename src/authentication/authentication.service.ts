@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -10,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { LoginDTO } from './dto/login.dto';
 import { v4 as uuIdv4 } from 'uuid';
 import { RefreshTokenDTO } from './dto/refresh-token.dto';
+import { ChangePasswordDTO } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthenticationService {
@@ -17,6 +19,8 @@ export class AuthenticationService {
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
+
+  saltRounds = process.env.SALT_ROUNDS ? +process.env.SALT_ROUNDS : 10;
 
   // Handle the new user registration
   async register(registerDto: RegisterDTO) {
@@ -31,8 +35,7 @@ export class AuthenticationService {
     }
 
     // hash the password
-    const saltRounds = process.env.SALT_ROUNDS ? +process.env.SALT_ROUNDS : 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, this.saltRounds);
 
     // create new user
     const newUser = await this.prisma.users.create({
@@ -135,5 +138,35 @@ export class AuthenticationService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  // Handle change password
+  async changePassword(userId: number, changePasswordDto: ChangePasswordDTO) {
+    const { oldPassword, newPassword } = changePasswordDto;
+
+    // find the user
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // compare the old password with the password in database
+    const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Wrong credentials');
+    }
+
+    // change user's password
+    const newHashedPassword = await bcrypt.hash(newPassword, this.saltRounds);
+    await this.prisma.users.update({
+      where: { id: userId },
+      data: { password: newHashedPassword },
+    });
+
+    return {
+      message: 'Password changed',
+    };
   }
 }
