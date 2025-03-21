@@ -89,12 +89,10 @@ export class AuthenticationService {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 3);
 
-    await this.prisma.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiryDate,
-      },
+    await this.prisma.refreshToken.upsert({
+      where: { userId: user.id },
+      update: { token: refreshToken, expiryDate },
+      create: { userId: user.id, token: refreshToken, expiryDate },
     });
 
     // remove the password from the response
@@ -119,7 +117,7 @@ export class AuthenticationService {
     });
 
     if (!fetchRefreshToken) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
     // Generate new tokens
