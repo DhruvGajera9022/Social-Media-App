@@ -12,12 +12,17 @@ import { LoginDTO } from './dto/login.dto';
 import { v4 as uuIdv4 } from 'uuid';
 import { RefreshTokenDTO } from './dto/refresh-token.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
+import { ForgotPasswordDTO } from './dto/forgot-password.dto';
+import { nanoid } from 'nanoid';
+import { MailService } from './service/mail.service';
+import { ResetPasswordDTO } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthenticationService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   saltRounds = process.env.SALT_ROUNDS ? +process.env.SALT_ROUNDS : 10;
@@ -167,6 +172,73 @@ export class AuthenticationService {
 
     return {
       message: 'Password changed',
+    };
+  }
+
+  // Handle forgot password
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDTO) {
+    const { email } = forgotPasswordDto;
+
+    // check the email
+    const user = await this.prisma.users.findUnique({
+      where: { email },
+    });
+    if (user) {
+      const expiryDate = new Date();
+      expiryDate.setUTCHours(expiryDate.getUTCHours() + 10);
+
+      // if user exists, generates password reset link
+      const resetToken = nanoid(64);
+      await this.prisma.resetToken.create({
+        data: {
+          token: resetToken,
+          userId: user.id,
+          expiryDate: expiryDate, // 1 hour
+        },
+      });
+
+      // send the link to the user by email (using nodemailer)
+      this.mailService.sendPasswordResetEmail(email, resetToken);
+    }
+
+    return {
+      message: 'If user exists, they will receive an email',
+    };
+  }
+
+  // Handle reset password
+  async resetPassword(resetPasswordDto: ResetPasswordDTO) {
+    const { resetToken, newPassword } = resetPasswordDto;
+
+    // fetch token from the database
+    const token = await this.prisma.refreshToken.findFirst({
+      where: {
+        token: resetToken,
+        expiryDate: { gte: new Date() },
+      },
+    });
+
+    if (!token) {
+      throw new UnauthorizedException('Invalid link');
+    }
+
+    const user = await this.prisma.users.findUnique({
+      where: { id: token.userId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, this.saltRounds);
+    await this.prisma.users.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    return {
+      message: 'Password reset successfully.',
     };
   }
 }

@@ -13,6 +13,8 @@ import { LoginDTO } from './dto/login.dto';
 import { RefreshTokenDTO } from './dto/refresh-token.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { ForgotPasswordDTO } from './dto/forgot-password.dto';
+import { ResetPasswordDTO } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthenticationController {
@@ -49,7 +51,15 @@ export class AuthenticationController {
     );
   }
 
-  // TODO handle forgot password
+  // handle forgot password
+  @Post('forgot-password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDTO) {
+    return this.authenticationService.forgotPassword(forgotPasswordDto);
+  }
 
-  // TODO handle reset password
+  // handle reset password
+  @Put('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDTO) {
+    return this.authenticationService.resetPassword(resetPasswordDto);
+  }
 }
