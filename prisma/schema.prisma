@@ -24,9 +24,18 @@ model Users {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   RefreshToken    RefreshToken[]
+  ResetToken      ResetToken?
 }
 
 model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  token      String
+  userId     Int      @unique
+  user       Users    @relation(fields: [userId], references: [id])
+  expiryDate DateTime
+}
+
+model ResetToken {
   id         Int      @id @default(autoincrement())
   token      String
   userId     Int      @unique
