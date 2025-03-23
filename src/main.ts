@@ -8,7 +8,7 @@ async function bootstrap() {
   // Initialize the app
   const app = await NestFactory.create(AppModule);
 
-  // Using custom logger instead of default loggers
+  // Using custom logger instead of default logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
   // Using validation pipe for input validation
