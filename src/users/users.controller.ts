@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,40 +7,53 @@ import {
   Param,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Roles } from 'src/authentication/decorator/roles.decorator';
 import { Role } from 'src/authentication/enum/role.enum';
 import { UpdateUserDTO } from './dto/update-user.dto';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
+import { RoleGuard } from 'src/authentication/guard/role.guard';
+import { SearchUserDTO } from './dto/search-user.dto';
 
+@ApiTags('Users') // Groups this under "Users" in Swagger
+@ApiBearerAuth() // Enables Bearer token authentication in Swagger
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   // Get all users
+  @ApiOperation({ summary: 'Get all users (Admin only)' })
+  @ApiResponse({ status: 200, description: 'List of users' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
+  @UseGuards(JwtAuthGuard, RoleGuard) // Ensures authentication & role-based access
+  @Roles(Role.Admin) // Restricts access to Admins only
   @Get()
-  @Roles(Role.Admin)
   async users() {
     return this.usersService.users();
   }
 
   // Search user
+  @ApiOperation({ summary: 'Search users by first name with pagination' })
+  @ApiResponse({ status: 200, description: 'List of matching users' })
+  @ApiResponse({ status: 400, description: 'Bad Request: Missing firstName' })
   @Get('search')
-  async searchUser(
-    @Query('firstName') firstName: string,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
-  ) {
+  async searchUser(@Query() query: SearchUserDTO) {
+    const { firstName, page = 1, limit = 10 } = query;
+
     if (!firstName) {
-      return {
-        message: 'Please provide a first name to search.',
-      };
+      throw new BadRequestException('Please provide a first name to search.');
     }
 
-    const pageNumber = +page || 1;
-    const pageSize = +limit || 10;
-
-    return this.usersService.searchUser(firstName, pageNumber, pageSize);
+    return this.usersService.searchUser(firstName, +page, +limit);
   }
 
   // Get user by id
