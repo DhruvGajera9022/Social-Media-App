@@ -31,7 +31,11 @@ export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
 
   // Handle the new user registration
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, description: 'User successfully registered' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
   @Post('register')
+  @HttpCode(HttpStatus.CREATED) // Ensures it returns 201 Created
   async register(@Body() registerDto: RegisterDTO) {
     return this.authenticationService.register(registerDto);
   }
