@@ -19,6 +19,7 @@ async function bootstrap() {
     .setTitle('Nest.js Project')
     .setDescription('API documentation for out Nest.js application')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   // Create the document

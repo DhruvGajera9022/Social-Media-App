@@ -15,7 +15,15 @@ import { ChangePasswordDTO } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { ForgotPasswordDTO } from './dto/forgot-password.dto';
 import { ResetPasswordDTO } from './dto/reset-password.dto';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
@@ -26,7 +34,8 @@ export class AuthenticationController {
     return this.authenticationService.register(registerDto);
   }
 
-  // handle the user login
+  // Handle user login
+  @ApiOperation({ summary: 'Authenticate user and generate an access token' })
   @Post('login')
   async login(@Body() loginDto: LoginDTO) {
     return this.authenticationService.login(loginDto);
@@ -40,6 +49,7 @@ export class AuthenticationController {
 
   // handle change password
   @Put('change-password')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async changePassword(
     @Req() req,
