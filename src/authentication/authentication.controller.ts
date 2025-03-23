@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Delete,
+  HttpCode,
+  HttpStatus,
   Post,
   Put,
   Req,
@@ -36,6 +38,9 @@ export class AuthenticationController {
 
   // Handle user login
   @ApiOperation({ summary: 'Authenticate user and generate an access token' })
+  @ApiResponse({ status: 200, description: 'User successfully authenticated' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @HttpCode(HttpStatus.OK) // Returns 200 instead of default 201 for POST
   @Post('login')
   async login(@Body() loginDto: LoginDTO) {
     return this.authenticationService.login(loginDto);
