@@ -26,7 +26,7 @@ export class ProfileController {
     return this.profileService.getProfile(+req.user.userId);
   }
 
-  // TODO Edit Profile
+  // Edit Profile
   @Put()
   @UseInterceptors(
     FileInterceptor('profile_picture', {
