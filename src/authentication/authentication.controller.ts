@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   HttpCode,
   HttpStatus,
   Post,
@@ -19,7 +18,6 @@ import { ForgotPasswordDTO } from './dto/forgot-password.dto';
 import { ResetPasswordDTO } from './dto/reset-password.dto';
 import {
   ApiBearerAuth,
-  ApiCreatedResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -99,6 +97,11 @@ export class AuthenticationController {
   }
 
   // handle reset password
+  @ApiOperation({ summary: 'Reset user password using a reset token' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request data' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired reset token' })
+  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @Put('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDTO) {
     return this.authenticationService.resetPassword(resetPasswordDto);
