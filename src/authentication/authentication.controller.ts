@@ -64,9 +64,14 @@ export class AuthenticationController {
   }
 
   // handle change password
-  @Put('change-password')
-  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change user password' })
+  @ApiBearerAuth() // Adds Bearer token authentication in Swagger
+  @ApiResponse({ status: 204, description: 'Password changed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT) // 204 No Content (best practice for password change)
+  @Put('change-password')
   async changePassword(
     @Req() req,
     @Body() changePasswordDto: ChangePasswordDTO,
