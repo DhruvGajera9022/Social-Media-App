@@ -83,6 +83,16 @@ export class AuthenticationController {
   }
 
   // handle forgot password
+  @ApiOperation({
+    summary: 'Send password reset instructions to the user email',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset link sent successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid email format' })
+  @ApiResponse({ status: 404, description: 'Email not found' })
+  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDTO) {
     return this.authenticationService.forgotPassword(forgotPasswordDto);
