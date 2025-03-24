@@ -28,30 +28,26 @@ export class AuthenticationService {
   saltRounds = process.env.SALT_ROUNDS ? +process.env.SALT_ROUNDS : 10;
 
   // Handle the new user registration
-  async register(registerDto: RegisterDTO) {
-    const { firstName, lastName, email, password, role } = registerDto;
-
+  async register(data: RegisterDTO) {
     // check if user exists
     const existingUser = await this.prisma.users.findUnique({
-      where: { email },
+      where: { email: data.email },
     });
     if (existingUser) {
       throw new ConflictException('User already exists');
     }
 
     // hash the password
-    const hashedPassword = await bcrypt.hash(password, this.saltRounds);
+    data.password = await bcrypt.hash(data.password, this.saltRounds);
+
+    const userData = {
+      ...data,
+      profile_picture: data.profile_picture ?? '',
+    };
 
     // create new user
     const newUser = await this.prisma.users.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        role,
-        profile_picture: '',
-      },
+      data: userData,
     });
 
     // remove the password from the response
