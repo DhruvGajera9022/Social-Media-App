@@ -24,7 +24,7 @@ async function bootstrap() {
     .addSecurityRequirements('bearer')
     .build();
 
-  // Create the document
+  // Create the documents
   const document = SwaggerModule.createDocument(app, config);
 
   // Setup the api path
