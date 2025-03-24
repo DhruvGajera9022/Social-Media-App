@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -97,6 +98,24 @@ export class PostController {
       return Response(true, 'Post edited successfully', editPost);
     } catch (error) {
       return Response(false, 'Failed to edit post', error.message);
+    }
+  }
+
+  @ApiOperation({ summary: 'Delete post by ID' })
+  @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
+  @ApiResponse({ status: 200, description: 'Post deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid ID' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async deletePost(@Param('id') id: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const deletePost = await this.postService.deletePost(+id, userId);
+
+      return Response(true, 'Post deleted successfully', deletePost);
+    } catch (error) {
+      return Response(false, 'Failed to delete the post', error.message);
     }
   }
 }
