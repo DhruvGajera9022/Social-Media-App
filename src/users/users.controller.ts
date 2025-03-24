@@ -7,7 +7,7 @@ import {
   NotFoundException,
   Param,
   ParseIntPipe,
-  Put,
+  Patch,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -103,7 +103,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   @UseGuards(JwtAuthGuard, RoleGuard) // Ensures authentication & role-based access
   @Roles(Role.Admin) // Restricts access to Admins only
-  @Put(':id')
+  @Patch(':id')
   async updateUser(
     @Param('id', ParseIntPipe) id: number, // Ensures ID is a number
     @Body() updateUserDto: UpdateUserDTO,
