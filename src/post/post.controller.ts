@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { PostService } from './post.service';
 import { Response } from 'src/utils/response.util';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -15,20 +23,29 @@ export class PostController {
   @ApiResponse({ status: 200, description: 'List of posts' })
   @Get()
   async getPosts() {
-    const posts = await this.postService.getPosts();
-
-    return Response(true, 'Posts retrieved successfully.', posts);
+    try {
+      const posts = await this.postService.getPosts();
+      return Response(true, 'Posts retrieved successfully.', posts);
+    } catch (error) {
+      return Response(false, 'Failed to retrieve posts.', error.message);
+    }
   }
 
   // Create Post
+  @ApiOperation({ summary: 'Create post' })
+  @ApiResponse({ status: 201, description: 'Post created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
   @Post()
   @UseGuards(JwtAuthGuard)
-  async createPost(@Req() req, @Body() createPostDto: CreatePostDTO) {
-    const newPost = await this.postService.createPost(
-      +req.user.userId,
-      createPostDto,
-    );
-
-    return Response(true, 'Post created successfully', newPost);
+  @HttpCode(201)
+  @UseGuards(JwtAuthGuard)
+  async createPost(@Request() req, @Body() createPostDto: CreatePostDTO) {
+    try {
+      const userId = +req.user.userId;
+      const newPost = await this.postService.createPost(userId, createPostDto);
+      return Response(true, 'Post created successfully', newPost);
+    } catch (error) {
+      return Response(false, 'Failed to create post', error.message);
+    }
   }
 }

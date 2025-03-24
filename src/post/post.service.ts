@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDTO } from './dto/create-post.dto';
 
@@ -15,7 +19,21 @@ export class PostService {
     });
   }
 
-  // TODO Get Post By Id
+  // Get Post By Id
+  async getPostById(postId: number) {
+    try {
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
+      });
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      return post;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 
   // Create Post
   async createPost(userId: number, createPostDto: CreatePostDTO) {
