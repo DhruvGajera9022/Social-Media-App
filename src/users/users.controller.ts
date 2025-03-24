@@ -25,6 +25,7 @@ import {
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { RoleGuard } from 'src/authentication/guard/role.guard';
 import { SearchUserDTO } from './dto/search-user.dto';
+import { Response } from 'src/utils/response.util';
 
 @ApiTags('Users') // Groups this under "Users" in Swagger
 @ApiBearerAuth() // Enables Bearer token authentication in Swagger
@@ -41,7 +42,12 @@ export class UsersController {
   @Roles(Role.Admin) // Restricts access to Admins only
   @Get()
   async users() {
-    return this.usersService.users();
+    try {
+      const users = await this.usersService.users();
+      return Response(true, 'Users data retrieved.', users);
+    } catch (error) {
+      return Response(false, 'Failed to retrieve users data.', error.message);
+    }
   }
 
   // Search user
@@ -56,7 +62,12 @@ export class UsersController {
       throw new BadRequestException('Please provide a first name to search.');
     }
 
-    return this.usersService.searchUser(firstName, +page, +limit);
+    try {
+      const user = await this.usersService.searchUser(firstName, +page, +limit);
+      return Response(true, 'User data found.', user);
+    } catch (error) {
+      return Response(false, 'Failed to found user data.', error.message);
+    }
   }
 
   // Get user by id
