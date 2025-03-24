@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDTO } from './dto/create-post.dto';
+import { EditPostDTO } from './dto/edit-post.dto';
 
 @Injectable()
 export class PostService {
@@ -56,7 +57,33 @@ export class PostService {
     }
   }
 
-  // TODO Edit Post
+  // Edit Post
+  async editPost(postId: number, userId: number, editPostDto: EditPostDTO) {
+    const { title, content, status, media_url } = editPostDto;
+
+    try {
+      const post = await this.prisma.posts.findFirst({
+        where: { id: postId, userId },
+      });
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      const updatePost = await this.prisma.posts.update({
+        where: { id: post.id },
+        data: {
+          title: title ?? post.title,
+          content: content ?? post.content,
+          status: status ?? post.status,
+          media_url: media_url ?? post.media_url,
+        },
+      });
+
+      return updatePost;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 
   // TODO Delete Post
 }

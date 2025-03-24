@@ -4,15 +4,23 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
-  Request,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { Response } from 'src/utils/response.util';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { CreatePostDTO } from './dto/create-post.dto';
+import { EditPostDTO } from './dto/edit-post.dto';
 
 @ApiTags('Posts') // Groups this under "Posts" in Swagger
 @Controller('post')
@@ -40,7 +48,7 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(201)
   @UseGuards(JwtAuthGuard)
-  async createPost(@Request() req, @Body() createPostDto: CreatePostDTO) {
+  async createPost(@Req() req, @Body() createPostDto: CreatePostDTO) {
     try {
       const userId = +req.user.userId;
       const newPost = await this.postService.createPost(userId, createPostDto);
@@ -62,6 +70,33 @@ export class PostController {
       return Response(true, 'Post retrieved successfully', post);
     } catch (error) {
       return Response(false, 'Failed to fetch post', error.message);
+    }
+  }
+
+  // Edit post
+  @ApiOperation({ summary: 'Edit a post' })
+  @ApiResponse({ status: 200, description: 'Post edited successfully' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiResponse({ status: 500, description: 'Failed to edit post' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  async editPost(
+    @Param('id') id: string,
+    @Req() req,
+    @Body() editPostDto: EditPostDTO,
+  ) {
+    try {
+      const userId = +req.user.userId;
+      const editPost = await this.postService.editPost(
+        +id,
+        userId,
+        editPostDto,
+      );
+
+      return Response(true, 'Post edited successfully', editPost);
+    } catch (error) {
+      return Response(false, 'Failed to edit post', error.message);
     }
   }
 }
