@@ -22,6 +22,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'src/utils/response.util';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -35,7 +36,12 @@ export class AuthenticationController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED) // Ensures it returns 201 Created
   async register(@Body() registerDto: RegisterDTO) {
-    return this.authenticationService.register(registerDto);
+    try {
+      const register = await this.authenticationService.register(registerDto);
+      return Response(true, 'Registration successful', register);
+    } catch (error) {
+      return Response(false, 'Failed to register.', error.message);
+    }
   }
 
   // Handle user login
@@ -45,7 +51,12 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK) // Returns 200 instead of default 201 for POST
   @Post('login')
   async login(@Body() loginDto: LoginDTO) {
-    return this.authenticationService.login(loginDto);
+    try {
+      const login = await this.authenticationService.login(loginDto);
+      return Response(true, 'Login successful', login);
+    } catch (error) {
+      return Response(false, 'Failed to login.', error.message);
+    }
   }
 
   // handle the refresh token
