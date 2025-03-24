@@ -3,8 +3,8 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
-  Put,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -90,7 +90,7 @@ export class AuthenticationController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT) // 204 No Content (best practice for password change)
-  @Put('change-password')
+  @Patch('change-password')
   async changePassword(
     @Req() req,
     @Body() changePasswordDto: ChangePasswordDTO,
@@ -134,7 +134,7 @@ export class AuthenticationController {
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 401, description: 'Invalid or expired reset token' })
   @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
-  @Put('reset-password')
+  @Patch('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDTO) {
     try {
       const resetPassword =
