@@ -2,7 +2,7 @@ import {
   Body,
   Controller,
   Get,
-  Put,
+  Patch,
   Req,
   UploadedFile,
   UseGuards,
@@ -49,7 +49,7 @@ export class ProfileController {
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(JwtAuthGuard)
-  @Put()
+  @Patch()
   @UseInterceptors(
     FileInterceptor('profile_picture', {
       storage: diskStorage({
