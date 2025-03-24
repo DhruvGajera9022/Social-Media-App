@@ -23,9 +23,9 @@ model Users {
   profile_picture String
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-  RefreshToken    RefreshToken[]
-  ResetToken      ResetToken?
-  Posts           Posts[]
+  refreshToken    RefreshToken[]
+  resetToken      ResetToken?
+  posts           Posts[]
 }
 
 model RefreshToken {
