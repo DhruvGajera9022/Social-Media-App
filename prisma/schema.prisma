@@ -46,7 +46,7 @@ model ResetToken {
 
 model Posts {
   id          Int      @id @default(autoincrement())
-  userId      Int      @unique
+  userId      Int
   user        Users    @relation(fields: [userId], references: [id])
   title       String
   content     String

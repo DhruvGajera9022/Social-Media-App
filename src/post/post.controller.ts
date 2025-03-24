@@ -8,7 +8,10 @@ import {
   Patch,
   Post,
   Req,
+  UploadedFile,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { Response } from 'src/utils/response.util';
@@ -22,6 +25,9 @@ import {
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { CreatePostDTO } from './dto/create-post.dto';
 import { EditPostDTO } from './dto/edit-post.dto';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @ApiTags('Posts') // Groups this under "Posts" in Swagger
 @Controller('post')
@@ -49,10 +55,37 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(201)
   @UseGuards(JwtAuthGuard)
-  async createPost(@Req() req, @Body() createPostDto: CreatePostDTO) {
+  @UseInterceptors(
+    FilesInterceptor('media_url', 10, {
+      // '10' is the max file count, adjust as needed
+      storage: diskStorage({
+        destination: './uploads/media_content',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          const fileName = `${uniqueSuffix}${ext}`;
+          callback(null, fileName);
+        },
+      }),
+    }),
+  )
+  async createPost(
+    @Req() req,
+    @Body() createPostDto: CreatePostDTO,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
     try {
+      if (!files || files.length === 0) {
+        return { status: false, message: 'No files uploaded' };
+      }
+
       const userId = +req.user.userId;
-      const newPost = await this.postService.createPost(userId, createPostDto);
+      const newPost = await this.postService.createPost(
+        userId,
+        createPostDto,
+        files, // Pass multiple files to service
+      );
       return Response(true, 'Post created successfully', newPost);
     } catch (error) {
       return Response(false, 'Failed to create post', error.message);
