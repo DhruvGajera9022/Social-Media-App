@@ -22,6 +22,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'src/utils/response.util';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -35,7 +36,12 @@ export class AuthenticationController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED) // Ensures it returns 201 Created
   async register(@Body() registerDto: RegisterDTO) {
-    return this.authenticationService.register(registerDto);
+    try {
+      const register = await this.authenticationService.register(registerDto);
+      return Response(true, 'Registration successful', register);
+    } catch (error) {
+      return Response(false, 'Failed to register.', error.message);
+    }
   }
 
   // Handle user login
@@ -45,7 +51,12 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK) // Returns 200 instead of default 201 for POST
   @Post('login')
   async login(@Body() loginDto: LoginDTO) {
-    return this.authenticationService.login(loginDto);
+    try {
+      const login = await this.authenticationService.login(loginDto);
+      return Response(true, 'Login successful', login);
+    } catch (error) {
+      return Response(false, 'Failed to login.', error.message);
+    }
   }
 
   // handle the refresh token
@@ -58,7 +69,17 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @Post('refresh')
   async refreshTokens(@Body() refreshTokenDto: RefreshTokenDTO) {
-    return this.authenticationService.refreshTokens(refreshTokenDto);
+    try {
+      const refresh =
+        await this.authenticationService.refreshTokens(refreshTokenDto);
+      return Response(true, 'Refresh token generated successfully', refresh);
+    } catch (error) {
+      return Response(
+        false,
+        'Failed to generate refresh token.',
+        error.message,
+      );
+    }
   }
 
   // handle change password
@@ -74,10 +95,15 @@ export class AuthenticationController {
     @Req() req,
     @Body() changePasswordDto: ChangePasswordDTO,
   ) {
-    return this.authenticationService.changePassword(
-      +req.user.userId,
-      changePasswordDto,
-    );
+    try {
+      const changePassword = this.authenticationService.changePassword(
+        +req.user.userId,
+        changePasswordDto,
+      );
+      return Response(false, 'Password changed.', changePassword);
+    } catch (error) {
+      return Response(false, 'Failed to change password.', error.message);
+    }
   }
 
   // handle forgot password
@@ -93,7 +119,13 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDTO) {
-    return this.authenticationService.forgotPassword(forgotPasswordDto);
+    try {
+      const forgotPassword =
+        await this.authenticationService.forgotPassword(forgotPasswordDto);
+      return Response(false, 'Email sent successfully.', forgotPassword);
+    } catch (error) {
+      return Response(false, 'Failed to forgot password.', error.message);
+    }
   }
 
   // handle reset password
@@ -104,6 +136,12 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @Put('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDTO) {
-    return this.authenticationService.resetPassword(resetPasswordDto);
+    try {
+      const resetPassword =
+        await this.authenticationService.resetPassword(resetPasswordDto);
+      return Response(false, 'Password reset successfully.', resetPassword);
+    } catch (error) {
+      return Response(false, 'Failed to reset password.', error.message);
+    }
   }
 }
