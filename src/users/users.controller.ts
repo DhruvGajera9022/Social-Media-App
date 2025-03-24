@@ -66,7 +66,7 @@ export class UsersController {
       const user = await this.usersService.searchUser(firstName, +page, +limit);
       return Response(true, 'User data found.', user);
     } catch (error) {
-      return Response(false, 'Failed to found user data.', error.message);
+      return Response(false, 'Failed to find user data.', error.message);
     }
   }
 
@@ -78,13 +78,17 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   @Get(':id')
   async userById(@Param('id', ParseIntPipe) id: number) {
-    const user = await this.usersService.userById(id);
+    try {
+      const user = await this.usersService.userById(id);
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found.`);
+      if (!user) {
+        throw new NotFoundException(`User with ID ${id} not found.`);
+      }
+
+      return Response(true, 'User found successfully.', user);
+    } catch (error) {
+      return Response(false, 'Failed to find user.', error.message);
     }
-
-    return user;
   }
 
   // Update user by id
@@ -104,13 +108,25 @@ export class UsersController {
     @Param('id', ParseIntPipe) id: number, // Ensures ID is a number
     @Body() updateUserDto: UpdateUserDTO,
   ) {
-    const user = await this.usersService.updateUser(id, updateUserDto);
+    try {
+      const updatedUser = await this.usersService.updateUser(id, updateUserDto);
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found.`);
+      if (!updatedUser) {
+        throw new NotFoundException(`User with ID ${id} not found.`);
+      }
+
+      return Response(
+        true,
+        'User data has been successfully updated.',
+        updatedUser,
+      );
+    } catch (error) {
+      return Response(
+        false,
+        'Error updating user data. Please try again.',
+        error.message,
+      );
     }
-
-    return user;
   }
 
   // Delete user by id
@@ -124,12 +140,15 @@ export class UsersController {
   @Roles(Role.Admin) // Restricts access to Admins only
   @Delete(':id')
   async delete(@Param('id', ParseIntPipe) id: number) {
-    const deleted = await this.usersService.delete(id);
+    try {
+      const deletedUser = await this.usersService.delete(id);
 
-    if (!deleted) {
-      throw new NotFoundException(`User with ID ${id} not found.`);
+      if (!deletedUser) {
+        throw new NotFoundException(`User with ID ${id} not found.`);
+      }
+      return Response(true, 'User deleted successfully.', deletedUser);
+    } catch (error) {
+      return Response(false, 'Failed to delete user.', error.message);
     }
-
-    return { message: `User with ID ${id} has been deleted successfully.` };
   }
 }
