@@ -6,10 +6,19 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDTO } from './dto/create-post.dto';
 import { EditPostDTO } from './dto/edit-post.dto';
+import { v2 as cloudinary } from 'cloudinary';
+import * as fs from 'fs';
+import { uploadToCloudinary } from 'src/utils/cloudinary.util';
 
 @Injectable()
 export class PostService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+  }
 
   // Get Posts
   async getPosts() {
@@ -37,22 +46,51 @@ export class PostService {
   }
 
   // Create Post
-  async createPost(userId: number, createPostDto: CreatePostDTO) {
-    const { title, content, status, media_url } = createPostDto;
+  async createPost(
+    userId: number,
+    createPostDto: CreatePostDTO,
+    files: Express.Multer.File[],
+  ) {
+    const { title, content, status } = createPostDto;
 
     try {
+      // Ensure files exist
+      if (!files || files.length === 0) {
+        throw new Error('No files uploaded');
+      }
+
+      // Upload each file to Cloudinary
+      const uploadResults = await Promise.all(
+        files.map(async (file) => {
+          const result = await uploadToCloudinary(file.path);
+          await fs.promises.unlink(file.path); // Remove file after upload
+          return result.secure_url;
+        }),
+      );
+
+      // Store URLs in database
       const newPost = await this.prisma.posts.create({
         data: {
           title,
           content,
           status,
-          media_url: media_url ?? [],
+          media_url: uploadResults,
           userId: userId,
         },
       });
 
       return newPost;
     } catch (error) {
+      // Clean up any remaining files if an error occurs
+      if (files) {
+        await Promise.all(
+          files.map(async (file) => {
+            if (file.path && fs.existsSync(file.path)) {
+              await fs.promises.unlink(file.path);
+            }
+          }),
+        );
+      }
       throw new InternalServerErrorException(error);
     }
   }
