@@ -28,30 +28,26 @@ export class AuthenticationService {
   saltRounds = process.env.SALT_ROUNDS ? +process.env.SALT_ROUNDS : 10;
 
   // Handle the new user registration
-  async register(registerDto: RegisterDTO) {
-    const { firstName, lastName, email, password, role } = registerDto;
-
+  async register(data: RegisterDTO) {
     // check if user exists
     const existingUser = await this.prisma.users.findUnique({
-      where: { email },
+      where: { email: data.email },
     });
     if (existingUser) {
       throw new ConflictException('User already exists');
     }
 
     // hash the password
-    const hashedPassword = await bcrypt.hash(password, this.saltRounds);
+    data.password = await bcrypt.hash(data.password, this.saltRounds);
+
+    const userData = {
+      ...data,
+      profile_picture: data.profile_picture ?? '',
+    };
 
     // create new user
     const newUser = await this.prisma.users.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        role,
-        profile_picture: '',
-      },
+      data: userData,
     });
 
     // remove the password from the response
@@ -72,19 +68,17 @@ export class AuthenticationService {
   }
 
   // Handle the user login
-  async login(loginDto: LoginDTO) {
-    const { email, password } = loginDto;
-
+  async login(data: LoginDTO) {
     // check if user exits
     const user = await this.prisma.users.findUnique({
-      where: { email },
+      where: { email: data.email },
     });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // check if password is correct
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(data.password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -113,13 +107,11 @@ export class AuthenticationService {
   }
 
   // Handle the refresh tokens
-  async refreshTokens(refreshTokenDto: RefreshTokenDTO) {
-    const { token } = refreshTokenDto;
-
+  async refreshTokens(data: RefreshTokenDTO) {
     // Fetch and validate refresh token
     const fetchRefreshToken = await this.prisma.refreshToken.findFirst({
       where: {
-        token,
+        token: data.token,
         expiryDate: { gte: new Date() },
       },
     });
@@ -146,9 +138,7 @@ export class AuthenticationService {
   }
 
   // Handle change password
-  async changePassword(userId: number, changePasswordDto: ChangePasswordDTO) {
-    const { oldPassword, newPassword } = changePasswordDto;
-
+  async changePassword(userId: number, data: ChangePasswordDTO) {
     // find the user
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
@@ -158,16 +148,16 @@ export class AuthenticationService {
     }
 
     // compare the old password with the password in database
-    const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+    const passwordMatch = await bcrypt.compare(data.oldPassword, user.password);
     if (!passwordMatch) {
       throw new UnauthorizedException('Wrong credentials');
     }
 
     // change user's password
-    const newHashedPassword = await bcrypt.hash(newPassword, this.saltRounds);
+    data.newPassword = await bcrypt.hash(data.newPassword, this.saltRounds);
     await this.prisma.users.update({
       where: { id: userId },
-      data: { password: newHashedPassword },
+      data: { password: data.newPassword },
     });
 
     return {
@@ -176,12 +166,10 @@ export class AuthenticationService {
   }
 
   // Handle forgot password
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDTO) {
-    const { email } = forgotPasswordDto;
-
+  async forgotPassword(data: ForgotPasswordDTO) {
     // check the email
     const user = await this.prisma.users.findUnique({
-      where: { email },
+      where: { email: data.email },
     });
     if (user) {
       const expiryDate = new Date();
@@ -198,7 +186,7 @@ export class AuthenticationService {
       });
 
       // send the link to the user by email (using nodemailer)
-      this.mailService.sendPasswordResetEmail(email, resetToken);
+      this.mailService.sendPasswordResetEmail(data.email, resetToken);
     }
 
     return {
@@ -207,13 +195,11 @@ export class AuthenticationService {
   }
 
   // Handle reset password
-  async resetPassword(resetPasswordDto: ResetPasswordDTO) {
-    const { resetToken, newPassword } = resetPasswordDto;
-
+  async resetPassword(data: ResetPasswordDTO) {
     // fetch token from the database
     const token = await this.prisma.resetToken.findFirst({
       where: {
-        token: resetToken,
+        token: data.resetToken,
         expiryDate: { gte: new Date() },
       },
     });
@@ -229,11 +215,11 @@ export class AuthenticationService {
       throw new NotFoundException('User not found');
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, this.saltRounds);
+    data.newPassword = await bcrypt.hash(data.newPassword, this.saltRounds);
     await this.prisma.users.update({
       where: { id: user.id },
       data: {
-        password: hashedPassword,
+        password: data.newPassword,
       },
     });
 
