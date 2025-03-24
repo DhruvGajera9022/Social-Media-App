@@ -20,6 +20,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'src/utils/response.util';
 
 @ApiTags('Profile')
 @ApiBearerAuth() // Requires authentication in Swagger
@@ -34,7 +35,12 @@ export class ProfileController {
   @Get()
   @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req) {
-    return this.profileService.getProfile(+req.user.userId);
+    try {
+      const profile = await this.profileService.getProfile(+req.user.userId);
+      return Response(true, 'Profile fetched successfully', profile);
+    } catch (error) {
+      return Response(false, 'Failed to fetch profile data.', error.message);
+    }
   }
 
   // Edit Profile
@@ -71,10 +77,15 @@ export class ProfileController {
     @Body() editProfileDto: EditProfileDTO,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.profileService.editProfile(
-      +req.user.userId,
-      editProfileDto,
-      file,
-    );
+    try {
+      const editProfile = await this.profileService.editProfile(
+        +req.user.userId,
+        editProfileDto,
+        file,
+      );
+      return Response(true, 'Profile edited successfully', editProfile);
+    } catch (error) {
+      return Response(false, 'Failed to edit profile.', error.message);
+    }
   }
 }
