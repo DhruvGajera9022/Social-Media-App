@@ -3,13 +3,14 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
   Post,
   Request,
   UseGuards,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { Response } from 'src/utils/response.util';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { CreatePostDTO } from './dto/create-post.dto';
 
@@ -46,6 +47,21 @@ export class PostController {
       return Response(true, 'Post created successfully', newPost);
     } catch (error) {
       return Response(false, 'Failed to create post', error.message);
+    }
+  }
+
+  // Get Post By Id
+  @ApiOperation({ summary: 'Get a post by ID' })
+  @ApiParam({ name: 'id', required: true, description: 'Post ID' })
+  @ApiResponse({ status: 200, description: 'Post retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @Get(':id')
+  async getPostById(@Param('id') id: string) {
+    try {
+      const post = await this.postService.getPostById(+id);
+      return Response(true, 'Post retrieved successfully', post);
+    } catch (error) {
+      return Response(false, 'Failed to fetch post', error.message);
     }
   }
 }
