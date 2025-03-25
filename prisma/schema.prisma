@@ -44,6 +44,12 @@ model ResetToken {
   expiryDate DateTime
 }
 
+model Roles {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  permissions Json
+}
+
 model Posts {
   id          Int      @id @default(autoincrement())
   userId      Int
