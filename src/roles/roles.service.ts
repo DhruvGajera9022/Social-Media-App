@@ -28,7 +28,7 @@ export class RolesService {
   }
 
   // Edit Role
-  async EditRole(id: number, updateRoleDto: UpdateUserDTO) {
+  async updateRole(id: number, updateRoleDto: UpdateUserDTO) {
     return this.prisma.roles
       .update({
         where: { id },
