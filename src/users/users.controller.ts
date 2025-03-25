@@ -12,8 +12,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { Roles } from 'src/authentication/decorator/roles.decorator';
-import { Role } from 'src/authentication/enum/role.enum';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import {
   ApiBearerAuth,
