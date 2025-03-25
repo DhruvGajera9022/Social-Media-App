@@ -23,8 +23,9 @@ model Users {
   profile_picture String
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-  RefreshToken    RefreshToken[]
-  ResetToken      ResetToken?
+  refreshToken    RefreshToken[]
+  resetToken      ResetToken?
+  posts           Posts[]
 }
 
 model RefreshToken {
@@ -41,4 +42,18 @@ model ResetToken {
   userId     Int      @unique
   user       Users    @relation(fields: [userId], references: [id])
   expiryDate DateTime
+}
+
+model Posts {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        Users    @relation(fields: [userId], references: [id])
+  title       String
+  content     String
+  media_url   String[]
+  status      String   @default("Draft")
+  likes_count Int      @default(0)
+  views_count Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 }

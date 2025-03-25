@@ -7,6 +7,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { EditProfileDTO } from './dto/edit-profile.dto';
 import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
+import { uploadToCloudinary } from 'src/utils/cloudinary.util';
 
 @Injectable()
 export class ProfileService {
@@ -22,6 +23,7 @@ export class ProfileService {
   async getProfile(userId: number) {
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
+      include: { posts: true },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -47,7 +49,7 @@ export class ProfileService {
         throw new NotFoundException('User not found');
       }
 
-      const uploadResult = await this.uploadToCloudinary(file.path);
+      const uploadResult = await uploadToCloudinary(file.path);
       await fs.promises.unlink(file.path);
       const file_url = uploadResult.secure_url;
 
@@ -70,22 +72,5 @@ export class ProfileService {
       }
       throw new InternalServerErrorException('Error in edit profile', error);
     }
-  }
-
-  // Upload image to cloudinary
-  private uploadToCloudinary(
-    filePath: string,
-  ): Promise<{ public_id: string; secure_url: string }> {
-    return new Promise((resolve, reject) => {
-      cloudinary.uploader.upload(filePath, (error, result) => {
-        if (error) return reject(error);
-        if (!result) return reject(new Error('Upload failed'));
-
-        resolve({
-          public_id: result.public_id,
-          secure_url: result.secure_url,
-        });
-      });
-    });
   }
 }
