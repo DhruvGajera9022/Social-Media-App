@@ -21,7 +21,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
-import { RoleGuard } from 'src/authentication/guard/role.guard';
 import { SearchUserDTO } from './dto/search-user.dto';
 import { Response } from 'src/utils/response.util';
 
@@ -36,8 +35,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'List of users' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
-  @UseGuards(JwtAuthGuard, RoleGuard) // Ensures authentication & role-based access
-  @Roles(Role.Admin) // Restricts access to Admins only
+  @UseGuards(JwtAuthGuard) // Ensures authentication & role-based access
   @Get()
   async users() {
     try {
@@ -99,8 +97,7 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid ID or input' })
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @UseGuards(JwtAuthGuard, RoleGuard) // Ensures authentication & role-based access
-  @Roles(Role.Admin) // Restricts access to Admins only
+  @UseGuards(JwtAuthGuard) // Ensures authentication & role-based access
   @Patch(':id')
   async updateUser(
     @Param('id', ParseIntPipe) id: number, // Ensures ID is a number
@@ -134,8 +131,7 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid ID' })
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @UseGuards(JwtAuthGuard, RoleGuard) // Ensures authentication & role-based access
-  @Roles(Role.Admin) // Restricts access to Admins only
+  @UseGuards(JwtAuthGuard) // Ensures authentication & role-based access
   @Delete(':id')
   async delete(@Param('id', ParseIntPipe) id: number) {
     try {

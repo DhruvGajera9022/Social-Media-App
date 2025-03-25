@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-import { IsEmail, IsEnum, IsString } from 'class-validator';
-=======
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
-import { Role } from 'src/authentication/enum/role.enum';
->>>>>>> a8cd9d37827d64f1581baad14764b01a28145e91
 
 export class UpdateUserDTO {
   @ApiProperty({
@@ -34,19 +29,12 @@ export class UpdateUserDTO {
   @IsEmail({}, { message: 'Please enter a valid email address' })
   email: string;
 
-<<<<<<< HEAD
-  @IsString()
-  // @IsEnum(Role, { message: 'Invalid role value' })
-  role: string;
-=======
   @ApiProperty({
     description: 'User role',
     example: 'Admin',
-    enum: Role,
     required: false,
   })
   @IsOptional()
-  @IsEnum(Role, { message: 'Invalid role value' })
-  role: Role;
->>>>>>> a8cd9d37827d64f1581baad14764b01a28145e91
+  // @IsEnum(Role, { message: 'Invalid role value' })
+  role: string;
 }
