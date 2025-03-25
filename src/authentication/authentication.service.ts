@@ -28,37 +28,54 @@ export class AuthenticationService {
   saltRounds = process.env.SALT_ROUNDS ? +process.env.SALT_ROUNDS : 10;
 
   // Handle the new user registration
-  async register(data: RegisterDTO) {
+  async register(registerDto: RegisterDTO) {
+    const { firstName, lastName, email, password, roleId } = registerDto;
+
     // check if user exists
     const existingUser = await this.prisma.users.findUnique({
-      where: { email: data.email },
+      where: { email: email },
     });
     if (existingUser) {
       throw new ConflictException('User already exists');
     }
 
     // hash the password
-    data.password = await bcrypt.hash(data.password, this.saltRounds);
+    const hashedPassword = await bcrypt.hash(password, this.saltRounds);
 
-    const userData = {
-      ...data,
-      profile_picture: data.profile_picture ?? '',
-    };
+    // Fetch the default "user" role
+    const userRole = await this.prisma.roles.findUnique({
+      where: { name: 'user' },
+    });
+
+    if (!userRole) throw new Error('Default user role not found');
 
     // create new user
     const newUser = await this.prisma.users.create({
-      data: userData,
+      data: {
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword,
+        roleId: userRole.id,
+        profile_picture: '',
+      },
+      include: {
+        role: true,
+      },
+      omit: {
+        password: true,
+      },
     });
 
-    // remove the password from the response
-    const { password: _, ...result } = newUser;
-    return result;
+    return newUser;
   }
 
   // Generate tokens
-  async generateUserTokens(userId: number) {
+  async generateUserTokens(user) {
+    const payload = { sub: user.id, role: user.role.name };
+
     // generate jwt token
-    const accessToken = this.jwtService.sign({ userId }, { expiresIn: '1h' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
     const refreshToken = uuIdv4();
 
     return {
@@ -68,24 +85,25 @@ export class AuthenticationService {
   }
 
   // Handle the user login
-  async login(data: LoginDTO) {
+  async login(loginDto: LoginDTO) {
+    const { email, password } = loginDto;
+
     // check if user exits
     const user = await this.prisma.users.findUnique({
-      where: { email: data.email },
+      where: { email: email },
+      include: { role: true }, // Include role for JWT payload
     });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // check if password is correct
-    const isPasswordValid = await bcrypt.compare(data.password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const { accessToken, refreshToken } = await this.generateUserTokens(
-      user.id,
-    );
+    const { accessToken, refreshToken } = await this.generateUserTokens(user);
 
     // Store refresh token in database
     const expiryDate = new Date();
@@ -120,10 +138,18 @@ export class AuthenticationService {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
+    // Fetch user data
+    const user = await this.prisma.users.findUnique({
+      where: { id: fetchRefreshToken.userId },
+      include: { role: true }, // Include role for JWT payload
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
     // Generate new tokens
-    const { accessToken, refreshToken } = await this.generateUserTokens(
-      fetchRefreshToken.userId,
-    );
+    const { accessToken, refreshToken } = await this.generateUserTokens(user);
 
     // Update refresh token in database
     await this.prisma.refreshToken.update({

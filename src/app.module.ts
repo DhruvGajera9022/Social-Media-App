@@ -11,6 +11,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { ProfileModule } from './profile/profile.module';
 import { PostModule } from './post/post.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { PostModule } from './post/post.module';
     UsersModule,
     ProfileModule,
     PostModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
