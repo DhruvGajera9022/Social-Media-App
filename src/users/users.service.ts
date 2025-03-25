@@ -56,7 +56,7 @@ export class UsersService {
 
   // Update user
   async updateUser(userId: number, updateUserDto: UpdateUserDTO) {
-    const { firstName, lastName, email, role } = updateUserDto;
+    const { firstName, lastName, email, roleId } = updateUserDto;
 
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
@@ -73,7 +73,7 @@ export class UsersService {
         firstName,
         lastName,
         email,
-        roleId: role,
+        roleId,
       },
     });
   }
