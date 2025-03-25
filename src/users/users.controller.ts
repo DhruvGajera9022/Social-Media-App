@@ -12,8 +12,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { Roles } from 'src/authentication/decorator/roles.decorator';
-import { Role } from 'src/authentication/enum/role.enum';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import {
   ApiBearerAuth,
@@ -39,7 +37,6 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
   @UseGuards(JwtAuthGuard, RoleGuard) // Ensures authentication & role-based access
-  @Roles(Role.Admin) // Restricts access to Admins only
   @Get()
   async users() {
     try {
@@ -102,7 +99,6 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @UseGuards(JwtAuthGuard, RoleGuard) // Ensures authentication & role-based access
-  @Roles(Role.Admin) // Restricts access to Admins only
   @Patch(':id')
   async updateUser(
     @Param('id', ParseIntPipe) id: number, // Ensures ID is a number
@@ -137,7 +133,6 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @UseGuards(JwtAuthGuard, RoleGuard) // Ensures authentication & role-based access
-  @Roles(Role.Admin) // Restricts access to Admins only
   @Delete(':id')
   async delete(@Param('id', ParseIntPipe) id: number) {
     try {
