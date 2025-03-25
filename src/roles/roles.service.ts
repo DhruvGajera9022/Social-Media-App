@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
-import { UpdateUserDTO } from 'src/users/dto/update-user.dto';
+import { UpdateRoleDTO } from './dto/update-role.dto';
 
 @Injectable()
 export class RolesService {
@@ -28,7 +28,7 @@ export class RolesService {
   }
 
   // Edit Role
-  async updateRole(id: number, updateRoleDto: UpdateUserDTO) {
+  async updateRole(id: number, updateRoleDto: UpdateRoleDTO) {
     return this.prisma.roles
       .update({
         where: { id },
