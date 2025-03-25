@@ -44,7 +44,7 @@ export class AuthenticationService {
 
     // Fetch the default "user" role
     const userRole = await this.prisma.roles.findUnique({
-      where: { name: 'user' },
+      where: { name: 'USER' },
     });
 
     if (!userRole) throw new Error('Default user role not found');
