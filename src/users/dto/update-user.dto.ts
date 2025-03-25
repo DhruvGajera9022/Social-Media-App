@@ -1,5 +1,4 @@
 import { IsEmail, IsEnum, IsString } from 'class-validator';
-import { Role } from 'src/authentication/enum/role.enum';
 
 export class UpdateUserDTO {
   @IsString()
@@ -13,6 +12,6 @@ export class UpdateUserDTO {
   email: string;
 
   @IsString()
-  @IsEnum(Role, { message: 'Invalid role value' })
-  role: Role;
+  // @IsEnum(Role, { message: 'Invalid role value' })
+  role: string;
 }
