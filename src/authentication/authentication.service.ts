@@ -130,6 +130,17 @@ export class AuthenticationService {
     console.log({ email, firstName, lastName });
   }
 
+  // Handle google login user validation or creation
+  async googleAuth(userData: any) {
+    const { email, name } = userData;
+
+    // Check if user exists in the database
+    const user = await this.prisma.users.findUnique({
+      where: { email },
+      include: { role: true },
+    });
+  }
+
   // Handle the refresh tokens
   async refreshTokens(data: RefreshTokenDTO) {
     // Fetch and validate refresh token

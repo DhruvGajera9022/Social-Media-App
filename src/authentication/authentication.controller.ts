@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
@@ -26,6 +27,7 @@ import {
 import { Response } from 'src/utils/response.util';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
+import { GoogleOAuthGuard } from './guard/google-oauth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -63,7 +65,7 @@ export class AuthenticationController {
   }
 
   // handle facebook login
-  @Get('/facebook')
+  @Get('facebook')
   @UseGuards(AuthGuard('facebook'))
   async facebookLogin(): Promise<any> {
     return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
@@ -80,6 +82,20 @@ export class AuthenticationController {
       statusCode: 200,
       data: user,
     };
+  }
+
+  // handle google login
+  @Get('google')
+  @UseGuards(GoogleOAuthGuard)
+  async googleLogin() {}
+
+  // handle google login callback
+  @Get('google/callback')
+  @UseGuards(GoogleOAuthGuard)
+  async googleAuthRedirect(@Req() req) {
+    if (!req.user) {
+      throw new UnauthorizedException('Google authentication failed');
+    }
   }
 
   // handle the refresh token
