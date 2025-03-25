@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Patch,
@@ -23,6 +24,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Response } from 'src/utils/response.util';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -57,6 +60,26 @@ export class AuthenticationController {
     } catch (error) {
       return Response(false, 'Failed to login.', error.message);
     }
+  }
+
+  // handle facebook login
+  @Get('/facebook')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookLogin(): Promise<any> {
+    return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
+  }
+
+  // handle facebook redirect url
+  @Get('/facebook/redirect')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookLoginRedirect(@Req() req: Request): Promise<any> {
+    const user = await this.authenticationService.validateOrCreateUser(
+      req.user,
+    );
+    return {
+      statusCode: 200,
+      data: user,
+    };
   }
 
   // handle the refresh token

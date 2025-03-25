@@ -124,6 +124,12 @@ export class AuthenticationService {
     };
   }
 
+  // Handle facebook login user validation or creation
+  async validateOrCreateUser(userData: any) {
+    const { email, firstName, lastName } = userData;
+    console.log({ email, firstName, lastName });
+  }
+
   // Handle the refresh tokens
   async refreshTokens(data: RefreshTokenDTO) {
     // Fetch and validate refresh token
