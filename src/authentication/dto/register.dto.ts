@@ -27,7 +27,7 @@ export class RegisterDTO {
   password!: string;
 
   @IsOptional()
-  role: string;
+  roleId: number;
 
   @IsOptional()
   profile_picture: string;

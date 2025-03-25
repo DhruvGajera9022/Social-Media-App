@@ -9,6 +9,7 @@ import { EditPostDTO } from './dto/edit-post.dto';
 import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
 import { uploadToCloudinary } from 'src/utils/cloudinary.util';
+import { PostEnum } from './enum/post-status.enum';
 
 @Injectable()
 export class PostService {
@@ -73,7 +74,7 @@ export class PostService {
         data: {
           title,
           content,
-          status,
+          status: PostEnum.DRAFT ?? status,
           media_url: uploadResults,
           userId: userId,
         },

@@ -36,5 +36,5 @@ export class UpdateUserDTO {
   })
   @IsOptional()
   // @IsEnum(Role, { message: 'Invalid role value' })
-  role: string;
+  role: number;
 }

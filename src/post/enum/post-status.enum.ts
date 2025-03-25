@@ -1,5 +1,5 @@
 export enum PostEnum {
-  Draft = 'Draft',
-  Published = 'Published',
-  Archived = 'Archived',
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  ARCHIVED = 'ARCHIVED',
 }

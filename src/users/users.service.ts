@@ -73,7 +73,7 @@ export class UsersService {
         firstName,
         lastName,
         email,
-        role,
+        roleId: role,
       },
     });
   }
