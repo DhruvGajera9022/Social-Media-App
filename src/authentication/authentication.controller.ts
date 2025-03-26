@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Patch,
   Post,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
@@ -23,6 +25,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Response } from 'src/utils/response.util';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
+import { GoogleOAuthGuard } from './guard/google-oauth.guard';
+import { TwitterAuthGuard } from './guard/twitter-oauth.guard';
+import { FacebookAuthGuard } from './guard/facebook-oauth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -57,6 +64,56 @@ export class AuthenticationController {
     } catch (error) {
       return Response(false, 'Failed to login.', error.message);
     }
+  }
+
+  // handle facebook login
+  @Get('facebook')
+  @UseGuards(FacebookAuthGuard)
+  async facebookLogin(): Promise<any> {
+    // return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
+  }
+
+  // handle facebook redirect url
+  @Get('/facebook/redirect')
+  @UseGuards(FacebookAuthGuard)
+  async facebookLoginRedirect(@Req() req: Request): Promise<any> {
+    try {
+      const facebookLogin = await this.authenticationService.facebookAuth(
+        req.user,
+      );
+      return Response(true, 'Facebook login successful.', facebookLogin);
+    } catch (error) {
+      return Response(false, 'Failed to login with facebook.', error.message);
+    }
+  }
+
+  // handle google login
+  @Get('google')
+  @UseGuards(GoogleOAuthGuard)
+  async googleLogin() {}
+
+  // handle google login callback
+  @Get('google/callback')
+  @UseGuards(GoogleOAuthGuard)
+  async googleAuthRedirect(@Req() req) {
+    try {
+      const googleLogin = await this.authenticationService.googleAuth(req.user);
+      return Response(true, 'Google login successful.', googleLogin);
+    } catch (error) {
+      return Response(false, 'Failed to login with google.', error.message);
+    }
+  }
+
+  // handle twitter login
+  @Get('twitter')
+  @UseGuards(TwitterAuthGuard)
+  async twitterAuth() {}
+
+  // handle twitter login callback
+  @Get('twitter/callback')
+  @UseGuards(TwitterAuthGuard)
+  async twitterAuthRedirect(@Req() req) {
+    console.log(req.user);
   }
 
   // handle the refresh token
