@@ -21,18 +21,20 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { RolesEnum } from './enum/roles.enum';
 
 @ApiTags('Roles')
 @ApiBearerAuth() // Adds Bearer token authentication in Swagger
 @Controller('roles')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard)
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   // Create Role
   @Post()
-  @ApiOperation({ summary: 'Create a new role' })
+  @Roles(RolesEnum.ADMIN)
+  @ApiOperation({ summary: 'Create a new role (Admin only)' })
   @ApiResponse({ status: 201, description: 'Role created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async create(@Body() createRoleDto: CreateRoleDto) {
@@ -46,7 +48,8 @@ export class RolesController {
 
   // Get All Roles
   @Get()
-  @ApiOperation({ summary: 'Retrieve all roles' })
+  @Roles(RolesEnum.ADMIN)
+  @ApiOperation({ summary: 'Retrieve all roles (Admin only)' })
   @ApiResponse({ status: 200, description: 'Roles retrieved successfully' })
   async findAll() {
     try {
@@ -59,7 +62,8 @@ export class RolesController {
 
   // Get Role By Id
   @Get(':id')
-  @ApiOperation({ summary: 'Get a role by ID' })
+  @Roles(RolesEnum.ADMIN)
+  @ApiOperation({ summary: 'Get a role by ID (Admin only)' })
   @ApiResponse({ status: 200, description: 'Role found successfully' })
   @ApiResponse({ status: 404, description: 'Role not found' })
   async findOne(@Param('id') id: string) {
@@ -73,7 +77,8 @@ export class RolesController {
 
   // Update Role
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a role' })
+  @Roles(RolesEnum.ADMIN)
+  @ApiOperation({ summary: 'Update a role (Admin only)' })
   @ApiResponse({ status: 200, description: 'Role updated successfully' })
   @ApiResponse({ status: 404, description: 'Role not found' })
   async updateRole(
@@ -90,7 +95,8 @@ export class RolesController {
 
   // Delete Role
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a role' })
+  @Roles(RolesEnum.ADMIN)
+  @ApiOperation({ summary: 'Delete a role (Admin only)' })
   @ApiResponse({ status: 200, description: 'Role deleted successfully' })
   @ApiResponse({ status: 404, description: 'Role not found' })
   async deleteRole(@Param('id') id: string) {
