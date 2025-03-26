@@ -92,11 +92,7 @@ export class AuthenticationController {
   // handle google login callback
   @Get('google/callback')
   @UseGuards(GoogleOAuthGuard)
-  async googleAuthRedirect(@Req() req) {
-    if (!req.user) {
-      throw new UnauthorizedException('Google authentication failed');
-    }
-  }
+  async googleAuthRedirect(@Req() req) {}
 
   // handle the refresh token
   @ApiOperation({ summary: 'Refresh access token using a refresh token' })
