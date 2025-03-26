@@ -30,8 +30,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       picture: photos[0].value,
     };
 
-    console.log(user);
-
     done(null, user);
   }
 }
