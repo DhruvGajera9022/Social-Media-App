@@ -125,7 +125,7 @@ export class AuthenticationService {
   }
 
   // Handle facebook login user validation or creation
-  async validateOrCreateUser(userData: any) {
+  async facebookAuth(userData: any) {
     const { email, firstName, lastName } = userData;
     console.log({ email, firstName, lastName });
   }
