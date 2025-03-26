@@ -34,7 +34,7 @@ import { extname } from 'path';
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  // All Posts
+  // Get All Posts
   @ApiOperation({ summary: 'Get all posts' })
   @ApiResponse({ status: 200, description: 'List of posts' })
   @Get()
