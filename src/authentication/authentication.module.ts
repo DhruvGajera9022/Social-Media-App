@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
 import { MailService } from './service/mail.service';
 import { FacebookStrategy } from './strategy/facebook.strategy';
 import { GoogleStrategy } from './strategy/google.strategy';
+import { TwitterStrategy } from './strategy/twitter.strategy';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { GoogleStrategy } from './strategy/google.strategy';
     MailService,
     FacebookStrategy,
     GoogleStrategy,
+    TwitterStrategy,
   ],
   exports: [JwtStrategy, PassportModule],
 })

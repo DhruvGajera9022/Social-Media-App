@@ -28,6 +28,8 @@ import { Response } from 'src/utils/response.util';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { GoogleOAuthGuard } from './guard/google-oauth.guard';
+import { TwitterAuthGuard } from './guard/twitter-oauth.guard';
+import { FacebookAuthGuard } from './guard/facebook-oauth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -66,14 +68,14 @@ export class AuthenticationController {
 
   // handle facebook login
   @Get('facebook')
-  @UseGuards(AuthGuard('facebook'))
+  @UseGuards(FacebookAuthGuard)
   async facebookLogin(): Promise<any> {
     // return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
   }
 
   // handle facebook redirect url
   @Get('/facebook/redirect')
-  @UseGuards(AuthGuard('facebook'))
+  @UseGuards(FacebookAuthGuard)
   async facebookLoginRedirect(@Req() req: Request): Promise<any> {
     try {
       const facebookLogin = await this.authenticationService.facebookAuth(
@@ -100,6 +102,18 @@ export class AuthenticationController {
     } catch (error) {
       return Response(false, 'Failed to login with google.', error.message);
     }
+  }
+
+  // handle twitter login
+  @Get('twitter')
+  @UseGuards(TwitterAuthGuard)
+  async twitterAuth() {}
+
+  // handle twitter login callback
+  @Get('twitter/callback')
+  @UseGuards(TwitterAuthGuard)
+  async twitterAuthRedirect(@Req() req) {
+    console.log(req.user);
   }
 
   // handle the refresh token
