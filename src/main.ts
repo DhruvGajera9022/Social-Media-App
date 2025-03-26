@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import 'colors';
 
 async function bootstrap() {
   // Initialize the app
@@ -38,7 +39,12 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 
   logger.log(
-    `🚀 Server running on: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
+    `🚀 Server running on: http://localhost:${process.env.PORT ?? 3000}`.bgWhite
+      .black,
+  );
+  logger.log(
+    `🚀 API Docs: http://localhost:${process.env.PORT ?? 3000}/api/docs`.bgWhite
+      .black,
   );
 }
 bootstrap();
