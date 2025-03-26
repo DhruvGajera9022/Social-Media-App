@@ -28,7 +28,7 @@ import { Response } from 'src/utils/response.util';
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
-  // Get profile
+  // Get user profile
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
