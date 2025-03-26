@@ -12,7 +12,7 @@ export class RolesService {
     return this.prisma.roles.create({ data: createRoleDto });
   }
 
-  // Get Roles
+  // Get All Roles
   async findAll() {
     return this.prisma.roles.findMany();
   }
