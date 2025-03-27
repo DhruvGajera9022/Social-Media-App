@@ -31,13 +31,25 @@ export class PostService {
   }
 
   // Get Post By Id
-  async getPostById(postId: number) {
+  async getPostById(postId: number, userId: number) {
     try {
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
       });
       if (!post) {
         throw new NotFoundException('Post not found');
+      }
+
+      // Check if post.userId !== userId then update view_count
+      if (post.userId !== userId && post.status !== PostEnum.DRAFT) {
+        await this.prisma.posts.update({
+          where: { id: postId },
+          data: {
+            views_count: {
+              increment: 1,
+            },
+          },
+        });
       }
 
       return post;
@@ -74,7 +86,7 @@ export class PostService {
         data: {
           title,
           content,
-          status: PostEnum.DRAFT ?? status,
+          status: PostEnum.PUBLISHED ?? status,
           media_url: uploadResults,
           userId: userId,
         },
@@ -135,6 +147,30 @@ export class PostService {
       }
 
       return this.prisma.posts.delete({ where: { id: postId } });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Pinning Post
+  async pinningPost(postId: number, userId: number) {
+    try {
+      // Find the post
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId, userId },
+      });
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      const pinnedPost = await this.prisma.posts.update({
+        where: { id: postId },
+        data: {
+          pinned: !post.pinned, // Toggle: true / false
+        },
+      });
+
+      return pinnedPost;
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

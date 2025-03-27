@@ -61,6 +61,7 @@ model Posts {
   status      PostStatus @default(PUBLISHED)
   likes_count Int        @default(0)
   views_count Int        @default(0)
+  pinned      Boolean    @default(false)
   created_at  DateTime   @default(now())
   updated_at  DateTime   @updatedAt
 }

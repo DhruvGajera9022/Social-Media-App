@@ -54,7 +54,6 @@ export class PostController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @HttpCode(201)
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FilesInterceptor('media_url', 10, {
       // '10' is the max file count, adjust as needed
@@ -97,10 +96,12 @@ export class PostController {
   @ApiParam({ name: 'id', required: true, description: 'Post ID' })
   @ApiResponse({ status: 200, description: 'Post retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Post not found' })
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async getPostById(@Param('id') id: string) {
+  async getPostById(@Param('id') id: string, @Req() req) {
     try {
-      const post = await this.postService.getPostById(+id);
+      const userId = +req.user.userId;
+      const post = await this.postService.getPostById(+id, userId);
       return Response(true, 'Post retrieved successfully', post);
     } catch (error) {
       return Response(false, 'Failed to fetch post', error.message);
@@ -134,6 +135,26 @@ export class PostController {
     }
   }
 
+  // Pin post
+  @ApiOperation({ summary: 'Pin post by ID' })
+  @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/pin')
+  async pinPost(@Param('id') id: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const pinnedPost = await this.postService.pinningPost(+id, userId);
+      const pinnedMessage = pinnedPost.pinned
+        ? 'Post pinned successfully'
+        : 'Post unpinned successfully';
+
+      return Response(true, pinnedMessage, pinnedPost);
+    } catch (error) {
+      return Response(false, 'Failed to pin the post', error.message);
+    }
+  }
+
+  // Delete post
   @ApiOperation({ summary: 'Delete post by ID' })
   @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
   @ApiResponse({ status: 200, description: 'Post deleted successfully' })
