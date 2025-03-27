@@ -23,14 +23,19 @@ export class ProfileService {
   async getProfile(userId: number) {
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
-      include: { posts: true },
+      include: {
+        posts: {
+          orderBy: [{ pinned: 'desc' }, { created_at: 'desc' }],
+          omit: { userId: true },
+        },
+      },
+      omit: { password: true },
     });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const { password: _, ...result } = user;
-    return result;
+    return user;
   }
 
   // Edit Profile
