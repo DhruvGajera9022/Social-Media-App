@@ -151,4 +151,28 @@ export class PostService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  // Pinning Post
+  async pinningPost(postId: number, userId: number) {
+    try {
+      // Find the post
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId, userId },
+      });
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      const pinnedPost = await this.prisma.posts.update({
+        where: { id: postId },
+        data: {
+          pinned: !post.pinned, // Toggle: true / false
+        },
+      });
+
+      return pinnedPost;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }

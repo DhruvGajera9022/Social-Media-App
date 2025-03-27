@@ -152,4 +152,22 @@ export class PostController {
       return Response(false, 'Failed to delete the post', error.message);
     }
   }
+
+  @ApiOperation({ summary: 'Pin post by ID' })
+  @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/pin')
+  async pinPost(@Param('id') id: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const pinnedPost = await this.postService.pinningPost(+id, userId);
+      const pinnedMessage = pinnedPost.pinned
+        ? 'Post pinned successfully'
+        : 'Post unpinned successfully';
+
+      return Response(true, pinnedMessage, pinnedPost);
+    } catch (error) {
+      return Response(false, 'Failed to pin the post', error.message);
+    }
+  }
 }
