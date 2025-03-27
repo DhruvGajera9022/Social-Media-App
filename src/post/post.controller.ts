@@ -135,24 +135,7 @@ export class PostController {
     }
   }
 
-  @ApiOperation({ summary: 'Delete post by ID' })
-  @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'Post deleted successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid ID' })
-  @ApiResponse({ status: 404, description: 'Post not found' })
-  @UseGuards(JwtAuthGuard)
-  @Delete(':id')
-  async deletePost(@Param('id') id: string, @Req() req) {
-    try {
-      const userId = +req.user.userId;
-      const deletePost = await this.postService.deletePost(+id, userId);
-
-      return Response(true, 'Post deleted successfully', deletePost);
-    } catch (error) {
-      return Response(false, 'Failed to delete the post', error.message);
-    }
-  }
-
+  // Pin post
   @ApiOperation({ summary: 'Pin post by ID' })
   @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
   @UseGuards(JwtAuthGuard)
@@ -168,6 +151,25 @@ export class PostController {
       return Response(true, pinnedMessage, pinnedPost);
     } catch (error) {
       return Response(false, 'Failed to pin the post', error.message);
+    }
+  }
+
+  // Delete post
+  @ApiOperation({ summary: 'Delete post by ID' })
+  @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
+  @ApiResponse({ status: 200, description: 'Post deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid ID' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async deletePost(@Param('id') id: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const deletePost = await this.postService.deletePost(+id, userId);
+
+      return Response(true, 'Post deleted successfully', deletePost);
+    } catch (error) {
+      return Response(false, 'Failed to delete the post', error.message);
     }
   }
 }
