@@ -23,9 +23,14 @@ import {
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { SearchUserDTO } from './dto/search-user.dto';
 import { Response } from 'src/utils/response.util';
+import { RolesGuard } from 'src/roles/guard/roles.guard';
+import { Roles } from 'src/roles/decorator/roles.decorator';
+import { RolesEnum } from 'src/roles/enum/roles.enum';
 
 @ApiTags('Users') // Groups this under "Users" in Swagger
 @ApiBearerAuth() // Enables Bearer token authentication in Swagger
+@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -35,7 +40,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'List of users' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
-  @UseGuards(JwtAuthGuard) // Ensures authentication & role-based access
+  @Roles(RolesEnum.ADMIN)
   @Get()
   async users() {
     try {
@@ -50,6 +55,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Search users by first name with pagination' })
   @ApiResponse({ status: 200, description: 'List of matching users' })
   @ApiResponse({ status: 400, description: 'Bad Request: Missing firstName' })
+  @Roles(RolesEnum.ADMIN, RolesEnum.USER)
   @Get('search')
   async searchUser(@Query() query: SearchUserDTO) {
     const { firstName, page = 1, limit = 10 } = query;
@@ -72,6 +78,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'User details' })
   @ApiResponse({ status: 400, description: 'Invalid ID' })
   @ApiResponse({ status: 404, description: 'User not found' })
+  @Roles(RolesEnum.ADMIN, RolesEnum.USER)
   @Get(':id')
   async userById(@Param('id', ParseIntPipe) id: number) {
     try {
@@ -97,7 +104,7 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid ID or input' })
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @UseGuards(JwtAuthGuard) // Ensures authentication & role-based access
+  @Roles(RolesEnum.ADMIN)
   @Patch(':id')
   async updateUser(
     @Param('id', ParseIntPipe) id: number, // Ensures ID is a number
@@ -131,7 +138,7 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid ID' })
   @ApiResponse({ status: 403, description: 'Forbidden (Admins only)' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @UseGuards(JwtAuthGuard) // Ensures authentication & role-based access
+  @Roles(RolesEnum.ADMIN)
   @Delete(':id')
   async delete(@Param('id', ParseIntPipe) id: number) {
     try {

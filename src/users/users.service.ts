@@ -8,12 +8,15 @@ export class UsersService {
 
   // Get all users
   async users() {
-    return this.prisma.users.findMany();
+    return this.prisma.users.findMany({ omit: { password: true } });
   }
 
   // Get user by id
   async userById(userId: number) {
-    const user = await this.prisma.users.findUnique({ where: { id: userId } });
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      omit: { password: true },
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -34,6 +37,7 @@ export class UsersService {
       },
       skip,
       take: limit,
+      omit: { password: true },
     });
 
     const totalUsers = await this.prisma.users.count({
