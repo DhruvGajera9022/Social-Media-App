@@ -31,7 +31,7 @@ import { GoogleOAuthGuard } from './guard/google-oauth.guard';
 import { TwitterAuthGuard } from './guard/twitter-oauth.guard';
 import { FacebookAuthGuard } from './guard/facebook-oauth.guard';
 
-@ApiTags('Authentication')
+@ApiTags('Authentication') // For api documentation tag
 @Controller('auth')
 export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
