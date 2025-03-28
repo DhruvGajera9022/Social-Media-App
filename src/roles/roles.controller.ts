@@ -23,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { RolesEnum } from './enum/roles.enum';
 
-@ApiTags('Roles')
+@ApiTags('Roles') // Tag for api documentation
 @ApiBearerAuth() // Adds Bearer token authentication in Swagger
 @Controller('roles')
 @UseGuards(RolesGuard)
