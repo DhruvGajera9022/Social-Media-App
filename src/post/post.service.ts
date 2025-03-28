@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -30,8 +31,8 @@ export class PostService {
     });
   }
 
-  // Get Post By Id
-  async getPostById(postId: number, userId: number) {
+  // Get single post
+  async singlePost(postId: number) {
     try {
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
@@ -39,6 +40,16 @@ export class PostService {
       if (!post) {
         throw new NotFoundException('Post not found');
       }
+      return post;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Get Post By Id
+  async getPostById(postId: number, userId: number) {
+    try {
+      const post = await this.singlePost(postId);
 
       // Check if post.userId !== userId then update view_count
       if (post.userId !== userId && post.status !== PostEnum.DRAFT) {
@@ -113,12 +124,7 @@ export class PostService {
     const { title, content, status, media_url } = editPostDto;
 
     try {
-      const post = await this.prisma.posts.findFirst({
-        where: { id: postId, userId },
-      });
-      if (!post) {
-        throw new NotFoundException('Post not found');
-      }
+      const post = await this.singlePost(postId);
 
       const updatePost = await this.prisma.posts.update({
         where: { id: post.id },
@@ -139,12 +145,7 @@ export class PostService {
   // Delete Post
   async deletePost(postId: number, userId: number) {
     try {
-      const post = await this.prisma.posts.findFirst({
-        where: { id: postId, userId },
-      });
-      if (!post) {
-        throw new NotFoundException('Post not found');
-      }
+      await this.singlePost(postId);
 
       return this.prisma.posts.delete({ where: { id: postId } });
     } catch (error) {
@@ -156,11 +157,10 @@ export class PostService {
   async pinningPost(postId: number, userId: number) {
     try {
       // Find the post
-      const post = await this.prisma.posts.findUnique({
-        where: { id: postId, userId },
-      });
-      if (!post) {
-        throw new NotFoundException('Post not found');
+      const post = await this.singlePost(postId);
+
+      if (userId !== post.userId) {
+        throw new ForbiddenException('You are not allowed to pin this post');
       }
 
       const pinnedPost = await this.prisma.posts.update({

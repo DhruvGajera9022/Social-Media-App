@@ -29,7 +29,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-@ApiTags('Posts') // Groups this under "Posts" in Swagger documentaion
+@ApiTags('Posts') // Groups this under "Posts" in Swagger documentation
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -153,6 +153,8 @@ export class PostController {
       return Response(false, 'Failed to pin the post', error.message);
     }
   }
+
+  
 
   // Delete post
   @ApiOperation({ summary: 'Delete post by ID' })
