@@ -27,6 +27,7 @@ model Users {
   refreshToken    RefreshToken[]
   resetToken      ResetToken?
   posts           Posts[]
+  PostLikes       PostLikes[]
 }
 
 model RefreshToken {
@@ -52,22 +53,32 @@ model Roles {
 }
 
 model Posts {
-  id          Int        @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   userId      Int
-  user        Users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        Users       @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String
   content     String
-  media_url   String[]   @default([])
-  status      PostStatus @default(PUBLISHED)
-  likes_count Int        @default(0)
-  views_count Int        @default(0)
-  pinned      Boolean    @default(false)
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
+  media_url   String[]    @default([])
+  status      PostStatus  @default(PUBLISHED)
+  likes_count Int         @default(0)
+  views_count Int         @default(0)
+  pinned      Boolean     @default(false)
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+  PostLikes   PostLikes[]
 }
 
 enum PostStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+model PostLikes {
+  postId Int
+  userId Int
+  post   Posts @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user   Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId]) // Composite primary key
 }

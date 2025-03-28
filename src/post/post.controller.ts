@@ -8,7 +8,6 @@ import {
   Patch,
   Post,
   Req,
-  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -25,11 +24,11 @@ import {
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { CreatePostDTO } from './dto/create-post.dto';
 import { EditPostDTO } from './dto/edit-post.dto';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-@ApiTags('Posts') // Groups this under "Posts" in Swagger documentaion
+@ApiTags('Posts') // Groups this under "Posts" in Swagger documentation
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -151,6 +150,21 @@ export class PostController {
       return Response(true, pinnedMessage, pinnedPost);
     } catch (error) {
       return Response(false, 'Failed to pin the post', error.message);
+    }
+  }
+
+  // Like post
+  @ApiOperation({ summary: 'Like post by ID' })
+  @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/like')
+  async likePost(@Param('id') id: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message, post } = await this.postService.likePost(+id, userId);
+      return Response(true, message, post);
+    } catch (error) {
+      return Response(false, 'Failed to like the post', error.message);
     }
   }
 
