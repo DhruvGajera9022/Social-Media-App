@@ -25,6 +25,7 @@ export class ProfileService {
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
       include: {
+        _count: { select: { followers: true, following: true } },
         posts: {
           orderBy: [{ pinned: 'desc' }, { created_at: 'desc' }],
           omit: { userId: true },
