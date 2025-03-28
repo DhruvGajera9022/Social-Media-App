@@ -2,7 +2,9 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Patch,
+  Post,
   Req,
   UploadedFile,
   UseGuards,
@@ -86,6 +88,21 @@ export class ProfileController {
       return Response(true, 'Profile edited successfully', editProfile);
     } catch (error) {
       return Response(false, 'Failed to edit profile.', error.message);
+    }
+  }
+
+  // Request to Follow
+  @Post(':id/follow')
+  async requestToFollow(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const request = await this.profileService.requestToFollow(
+        +targetId,
+        userId,
+      );
+      return Response(true, 'Follow request sent.', request);
+    } catch (error) {
+      return Response(false, 'Fail to send follow request.', error);
     }
   }
 }

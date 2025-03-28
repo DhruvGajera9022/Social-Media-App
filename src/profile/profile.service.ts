@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -76,6 +77,38 @@ export class ProfileService {
         await fs.unlinkSync(file.path);
       }
       throw new InternalServerErrorException('Error in edit profile', error);
+    }
+  }
+
+  // Request to Follow
+  async requestToFollow(targetId: number, userId: number) {
+    try {
+      const targetUser = await this.prisma.users.findUnique({
+        where: { id: targetId },
+      });
+      if (!targetId) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (!targetUser?.is_private) {
+        // If public, follow directly
+        return;
+      }
+
+      // Check if a request already exists
+      const existingRequest = await this.prisma.followRequests.findUnique({
+        where: { requesterId_targetId: { requesterId: userId, targetId } },
+      });
+      if (existingRequest) {
+        throw new BadRequestException('Follow request already sent.');
+      }
+
+      // Create follow request
+      await this.prisma.followRequests.create({
+        data: { requesterId: userId, targetId },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
     }
   }
 }
