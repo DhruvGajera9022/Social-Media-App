@@ -8,7 +8,6 @@ import {
   Patch,
   Post,
   Req,
-  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -25,7 +24,7 @@ import {
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { CreatePostDTO } from './dto/create-post.dto';
 import { EditPostDTO } from './dto/edit-post.dto';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
