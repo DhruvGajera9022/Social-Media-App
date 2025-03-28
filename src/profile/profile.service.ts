@@ -141,4 +141,17 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  // Unfollow user
+  async unfollowUser(targetId: number, userId: number) {
+    try {
+      await this.prisma.followers.deleteMany({
+        where: { followerId: userId, followingId: targetId },
+      });
+
+      return { message: 'Unfollowed successfully.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }

@@ -123,4 +123,19 @@ export class ProfileController {
       return Response(false, 'Fail to accept the request.', error);
     }
   }
+
+  // Unfollow user
+  @Post(':id/unfollow')
+  async unfollow(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const unfollow = await this.profileService.unfollowUser(
+        +targetId,
+        userId,
+      );
+      return Response(false, 'Unfollowed successfully.', unfollow);
+    } catch (error) {
+      return Response(false, 'Fail to unfollow user.', error);
+    }
+  }
 }
