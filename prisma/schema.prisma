@@ -14,20 +14,25 @@ datasource db {
 }
 
 model Users {
-  id              Int            @id @default(autoincrement())
-  firstName       String
-  lastName        String
-  email           String         @unique
-  password        String
-  roleId          Int            @default(2)
-  role            Roles          @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  profile_picture String
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  refreshToken    RefreshToken[]
-  resetToken      ResetToken?
-  posts           Posts[]
-  PostLikes       PostLikes[]
+  id                     Int              @id @default(autoincrement())
+  firstName              String
+  lastName               String
+  email                  String           @unique
+  password               String
+  roleId                 Int              @default(2)
+  role                   Roles            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  profile_picture        String
+  is_private             Boolean          @default(false)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  refreshToken           RefreshToken[]
+  resetToken             ResetToken?
+  posts                  Posts[]
+  followers              Followers[]      @relation("FollowersRelation")
+  following              Followers[]      @relation("FollowingRelation")
+  followRequestsSent     FollowRequests[] @relation("FollowRequestsSent")
+  followRequestsReceived FollowRequests[] @relation("FollowRequestsReceived")
+  PostLikes              PostLikes[]
 }
 
 model RefreshToken {
@@ -81,4 +86,24 @@ model PostLikes {
   user   Users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([postId, userId]) // Composite primary key
+}
+
+model Followers {
+  id          Int   @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+  follower    Users @relation("FollowersRelation", fields: [followerId], references: [id])
+  following   Users @relation("FollowingRelation", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId]) // Ensure a user can't follow twice
+}
+
+model FollowRequests {
+  id          Int   @id @default(autoincrement())
+  requesterId Int
+  targetId    Int
+  requester   Users @relation("FollowRequestsSent", fields: [requesterId], references: [id])
+  target      Users @relation("FollowRequestsReceived", fields: [targetId], references: [id])
+
+  @@unique([requesterId, targetId]) // Ensure a user can't request twice
 }

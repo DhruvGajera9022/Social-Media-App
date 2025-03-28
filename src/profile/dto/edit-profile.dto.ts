@@ -1,8 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, IsUrl } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 export class EditProfileDTO {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'First name of the user',
     example: 'John',
     required: false,
@@ -11,7 +17,7 @@ export class EditProfileDTO {
   @IsString({ message: 'First name must be a string' })
   firstName?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Last name of the user',
     example: 'Doe',
     required: false,
@@ -20,7 +26,7 @@ export class EditProfileDTO {
   @IsString({ message: 'Last name must be a string' })
   lastName?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Email address of the user',
     example: 'john.doe@example.com',
     required: false,
@@ -35,4 +41,13 @@ export class EditProfileDTO {
   })
   @IsOptional()
   profile_picture?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Set profile visibility: `true` for private, `false` for public',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  is_private?: boolean;
 }
