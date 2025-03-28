@@ -45,7 +45,9 @@ export class ProfileService {
     editProfileDto: EditProfileDTO,
     file: Express.Multer.File,
   ) {
-    const { firstName, lastName, email } = editProfileDto;
+    const { firstName, lastName, email, is_private } = editProfileDto;
+    const convertIsPrivate =
+      typeof is_private === 'string' ? is_private === 'true' : !!is_private;
 
     try {
       const user = await this.prisma.users.findUnique({
@@ -66,6 +68,7 @@ export class ProfileService {
           lastName,
           email,
           profile_picture: file_url,
+          is_private: convertIsPrivate,
         },
       });
 
@@ -86,13 +89,29 @@ export class ProfileService {
       const targetUser = await this.prisma.users.findUnique({
         where: { id: targetId },
       });
-      if (!targetId) {
+      if (!targetUser) {
         throw new NotFoundException('User not found');
       }
 
-      if (!targetUser?.is_private) {
+      if (!targetUser.is_private) {
         // If public, follow directly
-        return this.acceptFollowRequest(targetId, userId);
+        const existingFollow = await this.prisma.followers.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: userId,
+              followingId: targetId,
+            },
+          },
+        });
+        if (existingFollow) {
+          throw new BadRequestException('You are already following this user.');
+        }
+
+        await this.prisma.followers.create({
+          data: { followerId: userId, followingId: targetId },
+        });
+
+        return { message: 'You are now following this user.' };
       }
 
       // Check if a request already exists
@@ -137,6 +156,25 @@ export class ProfileService {
       ]);
 
       return { message: 'Follow request accepted.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Cancel Follow Request
+  async cancelFollowRequest(requesterId: number, targetId: number) {
+    try {
+      const followRequest = await this.prisma.followRequests.findFirst({
+        where: { requesterId, targetId },
+      });
+      if (!followRequest) {
+        throw new BadRequestException('No follow request found.');
+      }
+
+      await this.prisma.followRequests.delete({
+        where: { id: followRequest.id },
+      });
+      return { message: 'Follow request canceled successfully.' };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

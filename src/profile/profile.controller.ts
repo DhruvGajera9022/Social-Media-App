@@ -92,48 +92,77 @@ export class ProfileController {
     }
   }
 
-  // Request to Follow
+  // 📌 Request to Follow
+  @ApiOperation({ summary: 'Send a follow request' })
+  @ApiResponse({ status: 201, description: 'Follow request sent.' })
+  @ApiResponse({ status: 400, description: 'Follow request already sent.' })
   @UseGuards(JwtAuthGuard)
   @Post(':id/follow')
   async requestToFollow(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
-      const request = await this.profileService.requestToFollow(
+      const { message } = await this.profileService.requestToFollow(
         +targetId,
         userId,
       );
-      return Response(true, 'Follow request sent.', request);
+      return { status: false, message };
     } catch (error) {
       return Response(false, 'Fail to send follow request.', error);
     }
   }
 
-  // Accept Follow Request
+  // 📌 Accept Follow Request
+  @ApiOperation({ summary: 'Accept a follow request' })
+  @ApiResponse({ status: 200, description: 'Follow request accepted.' })
+  @ApiResponse({ status: 400, description: 'No follow request found.' })
   @UseGuards(JwtAuthGuard)
   @Post(':id/accept-follow')
   async acceptFollow(@Param('id') requesterId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
-      const acceptRequest = await this.profileService.acceptFollowRequest(
+      const { message } = await this.profileService.acceptFollowRequest(
         userId,
         +requesterId,
       );
-      return Response(true, 'Follow request accepted.', acceptRequest);
+      return { status: true, message };
     } catch (error) {
       return Response(false, 'Fail to accept the request.', error);
     }
   }
 
-  // Unfollow user
+  // 📌 Cancel Follow Request
+  @ApiOperation({ summary: 'Cancel a follow request' })
+  @ApiResponse({ status: 200, description: 'Follow request canceled.' })
+  @ApiResponse({ status: 400, description: 'No follow request found.' })
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/cancel-request')
+  async cancelFollowRequest(@Req() req, @Param('id') targetId: number) {
+    try {
+      const requesterId = req.user.userId;
+      const { message } = await this.profileService.cancelFollowRequest(
+        requesterId,
+        +targetId,
+      );
+      return { status: true, message };
+    } catch (error) {
+      return Response(true, 'Fail to cancel follow request.', error.message);
+    }
+  }
+
+  // 📌 Unfollow User
+  @ApiOperation({ summary: 'Unfollow a user' })
+  @ApiResponse({ status: 200, description: 'Unfollowed successfully.' })
+  @ApiResponse({ status: 400, description: 'You are not following this user.' })
+  @UseGuards(JwtAuthGuard)
   @Post(':id/unfollow')
   async unfollow(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
-      const unfollow = await this.profileService.unfollowUser(
+      const { message } = await this.profileService.unfollowUser(
         +targetId,
         userId,
       );
-      return Response(false, 'Unfollowed successfully.', unfollow);
+      return { status: false, message };
     } catch (error) {
       return Response(false, 'Fail to unfollow user.', error);
     }
