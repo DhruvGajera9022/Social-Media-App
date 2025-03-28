@@ -32,7 +32,7 @@ export class PostService {
     });
   }
 
-  // Get single post
+  // Get Single Post
   async singlePost(postId: number) {
     try {
       const post = await this.prisma.posts.findUnique({
