@@ -29,7 +29,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-@ApiTags('Posts') // Groups this under "Posts" in Swagger
+@ApiTags('Posts') // Groups this under "Posts" in Swagger documentaion
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) {}
