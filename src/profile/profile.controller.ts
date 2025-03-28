@@ -22,7 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { Response } from 'src/utils/response.util';
 
-@ApiTags('Profile')
+@ApiTags('Profile') // Tags for api documentation
 @ApiBearerAuth() // Requires authentication in Swagger
 @Controller('profile')
 export class ProfileController {
