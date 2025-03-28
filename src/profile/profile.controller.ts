@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -92,6 +93,7 @@ export class ProfileController {
   }
 
   // Request to Follow
+  @UseGuards(JwtAuthGuard)
   @Post(':id/follow')
   async requestToFollow(@Param('id') targetId: string, @Req() req) {
     try {
@@ -103,6 +105,22 @@ export class ProfileController {
       return Response(true, 'Follow request sent.', request);
     } catch (error) {
       return Response(false, 'Fail to send follow request.', error);
+    }
+  }
+
+  // Accept Follow Request
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/accept-follow')
+  async acceptFollow(@Param('id') requesterId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const acceptRequest = await this.profileService.acceptFollowRequest(
+        userId,
+        +requesterId,
+      );
+      return Response(true, 'Follow request accepted.', acceptRequest);
+    } catch (error) {
+      return Response(false, 'Fail to accept the request.', error);
     }
   }
 }

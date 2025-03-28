@@ -92,7 +92,7 @@ export class ProfileService {
 
       if (!targetUser?.is_private) {
         // If public, follow directly
-        return;
+        return this.acceptFollowRequest(targetId, userId);
       }
 
       // Check if a request already exists
@@ -107,6 +107,36 @@ export class ProfileService {
       await this.prisma.followRequests.create({
         data: { requesterId: userId, targetId },
       });
+
+      return { message: 'Follow request sent.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Accept Follow Request
+  async acceptFollowRequest(targetId: number, userId: number) {
+    try {
+      // Check if request exists
+      const request = await this.prisma.followRequests.findUnique({
+        where: { requesterId_targetId: { requesterId: userId, targetId } },
+      });
+      if (!request) {
+        throw new BadRequestException('No follow request found.');
+      }
+
+      await this.prisma.$transaction([
+        // Move request to followers
+        this.prisma.followers.create({
+          data: { followerId: userId, followingId: targetId },
+        }),
+        // Delete request from follow_requests
+        this.prisma.followRequests.delete({
+          where: { id: request.id },
+        }),
+      ]);
+
+      return { message: 'Follow request accepted.' };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
