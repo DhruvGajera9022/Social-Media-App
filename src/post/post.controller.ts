@@ -154,7 +154,20 @@ export class PostController {
     }
   }
 
-  
+  // Like post
+  @ApiOperation({ summary: 'Like post by ID' })
+  @ApiParam({ name: 'id', description: 'Post ID', example: 1 })
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/like')
+  async likePost(@Param('id') id: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message, post } = await this.postService.likePost(+id, userId);
+      return Response(true, message, post);
+    } catch (error) {
+      return Response(false, 'Failed to like the post', error.message);
+    }
+  }
 
   // Delete post
   @ApiOperation({ summary: 'Delete post by ID' })

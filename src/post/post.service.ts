@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -171,6 +172,47 @@ export class PostService {
       });
 
       return pinnedPost;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Like Post
+  async likePost(postId: number, userId: number) {
+    try {
+      // Check if user has already liked the post
+      const existingLike = await this.prisma.postLikes.findUnique({
+        where: {
+          postId_userId: { postId, userId },
+        },
+      });
+      if (existingLike) {
+        // If like exists, remove it (decrement count)
+        const [updatedPost] = await this.prisma.$transaction([
+          this.prisma.posts.update({
+            where: { id: postId },
+            data: {
+              likes_count: { decrement: 1 },
+            },
+          }),
+          this.prisma.postLikes.delete({
+            where: { postId_userId: { postId, userId } },
+          }),
+        ]);
+        return { message: 'Like removed', post: updatedPost };
+      } else {
+        // Start a transaction to like the post
+        const [updatedPost] = await this.prisma.$transaction([
+          this.prisma.posts.update({
+            where: { id: postId },
+            data: { likes_count: { increment: 1 } },
+          }),
+          this.prisma.postLikes.create({
+            data: { postId, userId },
+          }),
+        ]);
+        return { message: 'Post liked', post: updatedPost };
+      }
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
