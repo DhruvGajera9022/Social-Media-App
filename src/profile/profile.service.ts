@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -44,24 +45,33 @@ export class ProfileService {
   async editProfile(
     userId: number,
     editProfileDto: EditProfileDTO,
-    file: Express.Multer.File,
+    file?: Express.Multer.File,
   ) {
     const { firstName, lastName, email, is_private } = editProfileDto;
     const convertIsPrivate =
       typeof is_private === 'string' ? is_private === 'true' : !!is_private;
 
     try {
+      // Find user
       const user = await this.prisma.users.findUnique({
         where: { id: userId },
       });
-      if (!user) {
-        throw new NotFoundException('User not found');
+      if (!user) throw new NotFoundException('User not found');
+
+      // Handle file upload if present
+      let file_url = user.profile_picture; // Keep old picture if no new upload
+      if (file) {
+        try {
+          const uploadResult = await uploadToCloudinary(file.path);
+          file_url = uploadResult.secure_url;
+        } finally {
+          if (file?.path && fs.existsSync(file.path)) {
+            await fs.promises.unlink(file.path); // Remove local file
+          }
+        }
       }
 
-      const uploadResult = await uploadToCloudinary(file.path);
-      await fs.promises.unlink(file.path);
-      const file_url = uploadResult.secure_url;
-
+      // Update user
       const updateUser = await this.prisma.users.update({
         where: { id: userId },
         data: {
@@ -71,14 +81,15 @@ export class ProfileService {
           profile_picture: file_url,
           is_private: convertIsPrivate,
         },
+        omit: { password: true },
       });
 
-      const { password: _, ...result } = updateUser;
-      return result;
+      return updateUser;
     } catch (error) {
-      // Removing if error occurs
-      if (file.path && fs.existsSync(file.path)) {
-        await fs.unlinkSync(file.path);
+      console.error('Edit Profile Error:', error);
+      // Ensure local file is removed if an error occurs
+      if (file?.path && fs.existsSync(file.path)) {
+        await fs.promises.unlink(file.path);
       }
       throw new InternalServerErrorException('Error in edit profile', error);
     }
