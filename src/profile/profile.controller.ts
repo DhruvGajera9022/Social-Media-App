@@ -262,6 +262,17 @@ export class ProfileController {
   }
 
   // 📌 Block User
+  @ApiOperation({
+    summary: 'Block a user',
+  })
+  @ApiResponse({ status: 200, description: 'User blocked successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
   @Post(':id/block')
   @UseGuards(JwtAuthGuard)
   async blockUser(@Param('id') targetId: string, @Req() req) {
@@ -274,6 +285,33 @@ export class ProfileController {
       return { success: true, message };
     } catch (error) {
       return Response(false, 'Fail to block user.', error.message);
+    }
+  }
+
+  // 📌 Block User
+  @ApiOperation({
+    summary: 'Unblock a user',
+  })
+  @ApiResponse({ status: 200, description: 'User unblocked successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  @Post(':id/unblock')
+  @UseGuards(JwtAuthGuard)
+  async unblockUser(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message } = await this.profileService.unblockUser(
+        userId,
+        +targetId,
+      );
+      return { success: true, message };
+    } catch (error) {
+      return Response(false, 'Fail to unblock user.', error.message);
     }
   }
 }

@@ -317,4 +317,20 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  // Unblock User
+  async unblockUser(userId: number, targetId: number) {
+    try {
+      const deletedBlock = await this.prisma.blockList.deleteMany({
+        where: { blockerId: userId, blockedId: targetId },
+      });
+      if (!deletedBlock.count) {
+        throw new NotFoundException('User is not blocked.');
+      }
+
+      return { message: 'User unblocked successfully' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }
