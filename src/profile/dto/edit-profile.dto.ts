@@ -35,13 +35,6 @@ export class EditProfileDTO {
   @IsEmail({}, { message: 'Please enter a valid email address' })
   email?: string;
 
-  @ApiProperty({
-    description: 'Profile picture URL',
-    required: false,
-  })
-  @IsOptional()
-  profile_picture?: string;
-
   @ApiPropertyOptional({
     description:
       'Set profile visibility: `true` for private, `false` for public',

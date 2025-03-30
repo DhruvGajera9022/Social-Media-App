@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -25,6 +26,7 @@ export class ProfileService {
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
       include: {
+        _count: { select: { followers: true, following: true } },
         posts: {
           orderBy: [{ pinned: 'desc' }, { created_at: 'desc' }],
           omit: { userId: true },
@@ -40,15 +42,38 @@ export class ProfileService {
   }
 
   // Edit Profile
-  async editProfile(
-    userId: number,
-    editProfileDto: EditProfileDTO,
-    file: Express.Multer.File,
-  ) {
+  async editProfile(userId: number, editProfileDto: EditProfileDTO) {
     const { firstName, lastName, email, is_private } = editProfileDto;
     const convertIsPrivate =
       typeof is_private === 'string' ? is_private === 'true' : !!is_private;
 
+    try {
+      // Find user
+      const user = await this.prisma.users.findUnique({
+        where: { id: userId },
+      });
+      if (!user) throw new NotFoundException('User not found');
+
+      // Update user
+      const updateUser = await this.prisma.users.update({
+        where: { id: userId },
+        data: {
+          firstName,
+          lastName,
+          email,
+          is_private: convertIsPrivate,
+        },
+        omit: { password: true },
+      });
+
+      return updateUser;
+    } catch (error) {
+      throw new InternalServerErrorException('Error in edit profile', error);
+    }
+  }
+
+  // Edit Profile Picture
+  async editProfilePicture(userId: number, file?: Express.Multer.File) {
     try {
       const user = await this.prisma.users.findUnique({
         where: { id: userId },
@@ -57,29 +82,36 @@ export class ProfileService {
         throw new NotFoundException('User not found');
       }
 
-      const uploadResult = await uploadToCloudinary(file.path);
-      await fs.promises.unlink(file.path);
-      const file_url = uploadResult.secure_url;
+      // Handle file upload if present
+      let file_url = user.profile_picture; // Keep old picture if no new upload
+      if (file) {
+        try {
+          const uploadResult = await uploadToCloudinary(file.path);
+          file_url = uploadResult.secure_url;
+        } finally {
+          if (file?.path && fs.existsSync(file.path)) {
+            await fs.promises.unlink(file.path); // Remove local file
+          }
+        }
+      }
 
-      const updateUser = await this.prisma.users.update({
+      await this.prisma.users.update({
         where: { id: userId },
         data: {
-          firstName,
-          lastName,
-          email,
           profile_picture: file_url,
-          is_private: convertIsPrivate,
         },
+        omit: { password: true },
       });
-
-      const { password: _, ...result } = updateUser;
-      return result;
+      return { message: 'Profile picture updated.' };
     } catch (error) {
-      // Removing if error occurs
-      if (file.path && fs.existsSync(file.path)) {
-        await fs.unlinkSync(file.path);
+      // Ensure local file is removed if an error occurs
+      if (file?.path && fs.existsSync(file.path)) {
+        await fs.promises.unlink(file.path);
       }
-      throw new InternalServerErrorException('Error in edit profile', error);
+      throw new InternalServerErrorException(
+        'Error in edit profile-picture',
+        error,
+      );
     }
   }
 
