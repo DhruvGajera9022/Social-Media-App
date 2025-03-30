@@ -288,7 +288,7 @@ export class ProfileController {
     }
   }
 
-  // 📌 Block User
+  // 📌 Unblock User
   @ApiOperation({
     summary: 'Unblock a user',
   })
@@ -312,6 +312,37 @@ export class ProfileController {
       return { success: true, message };
     } catch (error) {
       return Response(false, 'Fail to unblock user.', error.message);
+    }
+  }
+
+  // 📌 Check user block
+  @ApiOperation({ summary: 'Check if a user is blocked' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns whether the user is blocked.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @Get(':id/is-blocked')
+  @UseGuards(JwtAuthGuard)
+  async isUserBlocked(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const isBlocked = await this.profileService.isUserBlocked(
+        userId,
+        +targetId,
+      );
+      return { success: true, isBlocked };
+    } catch (error) {
+      return Response(
+        false,
+        'Fail to check user is blocked or not.',
+        error.message,
+      );
     }
   }
 }

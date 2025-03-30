@@ -333,4 +333,17 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  // Check if user id blocked
+  async isUserBlocked(userId: number, targetId: number): Promise<boolean> {
+    try {
+      const block = await this.prisma.blockList.findFirst({
+        where: { blockerId: userId, blockedId: targetId },
+      });
+
+      return !!block;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }
