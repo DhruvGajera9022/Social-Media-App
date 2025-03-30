@@ -14,7 +14,6 @@ async function bootstrap() {
   app.useLogger(logger);
 
   // Using validation pipe for input validation
-  // some changes
   app.useGlobalPipes(new ValidationPipe());
 
   // config for api documentation
