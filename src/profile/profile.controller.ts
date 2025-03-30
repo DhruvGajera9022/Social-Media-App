@@ -10,6 +10,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
@@ -53,6 +54,28 @@ export class ProfileController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(JwtAuthGuard)
   @Patch()
+  async editProfile(@Req() req, @Body() editProfileDto: EditProfileDTO) {
+    try {
+      const editProfile = await this.profileService.editProfile(
+        +req.user.userId,
+        editProfileDto,
+      );
+      return Response(true, 'Profile edited successfully', editProfile);
+    } catch (error) {
+      return Response(false, 'Failed to edit profile.', error.message);
+    }
+  }
+
+  // 📌 Update Profile Picture Separately
+  @Patch('profile-picture')
+  @ApiOperation({ summary: 'Edit user profile-picture' })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile-Picture updated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('profile_picture', {
       storage: diskStorage({
@@ -75,20 +98,19 @@ export class ProfileController {
       },
     }),
   )
-  async editProfile(
+  async updateProfilePicture(
     @Req() req,
-    @Body() editProfileDto: EditProfileDTO,
     @UploadedFile() file: Express.Multer.File,
   ) {
     try {
-      const editProfile = await this.profileService.editProfile(
-        +req.user.userId,
-        editProfileDto,
+      const userId = +req.user.userId;
+      const { message } = await this.profileService.editProfilePicture(
+        userId,
         file,
       );
-      return Response(true, 'Profile edited successfully', editProfile);
+      return { status: true, message };
     } catch (error) {
-      return Response(false, 'Failed to edit profile.', error.message);
+      return Response(false, 'Fail to update profile-picture', error.message);
     }
   }
 

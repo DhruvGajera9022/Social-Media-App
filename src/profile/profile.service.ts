@@ -42,11 +42,7 @@ export class ProfileService {
   }
 
   // Edit Profile
-  async editProfile(
-    userId: number,
-    editProfileDto: EditProfileDTO,
-    file?: Express.Multer.File,
-  ) {
+  async editProfile(userId: number, editProfileDto: EditProfileDTO) {
     const { firstName, lastName, email, is_private } = editProfileDto;
     const convertIsPrivate =
       typeof is_private === 'string' ? is_private === 'true' : !!is_private;
@@ -57,6 +53,34 @@ export class ProfileService {
         where: { id: userId },
       });
       if (!user) throw new NotFoundException('User not found');
+
+      // Update user
+      const updateUser = await this.prisma.users.update({
+        where: { id: userId },
+        data: {
+          firstName,
+          lastName,
+          email,
+          is_private: convertIsPrivate,
+        },
+        omit: { password: true },
+      });
+
+      return updateUser;
+    } catch (error) {
+      throw new InternalServerErrorException('Error in edit profile', error);
+    }
+  }
+
+  // Edit Profile Picture
+  async editProfilePicture(userId: number, file?: Express.Multer.File) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
 
       // Handle file upload if present
       let file_url = user.profile_picture; // Keep old picture if no new upload
@@ -71,27 +95,23 @@ export class ProfileService {
         }
       }
 
-      // Update user
-      const updateUser = await this.prisma.users.update({
+      await this.prisma.users.update({
         where: { id: userId },
         data: {
-          firstName,
-          lastName,
-          email,
           profile_picture: file_url,
-          is_private: convertIsPrivate,
         },
         omit: { password: true },
       });
-
-      return updateUser;
+      return { message: 'Profile picture updated.' };
     } catch (error) {
-      console.error('Edit Profile Error:', error);
       // Ensure local file is removed if an error occurs
       if (file?.path && fs.existsSync(file.path)) {
         await fs.promises.unlink(file.path);
       }
-      throw new InternalServerErrorException('Error in edit profile', error);
+      throw new InternalServerErrorException(
+        'Error in edit profile-picture',
+        error,
+      );
     }
   }
 
