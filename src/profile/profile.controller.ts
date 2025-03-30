@@ -214,4 +214,27 @@ export class ProfileController {
       return Response(false, 'Fail to unfollow user.', error);
     }
   }
+
+  // 📌 Get Followers
+  @ApiOperation({ summary: 'Get Followers List' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved followers list.',
+  })
+  @ApiResponse({ status: 400, description: 'Fail retrieved followers list.' })
+  @Get('followers')
+  @UseGuards(JwtAuthGuard)
+  async getFollowers(@Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const userFollowers = await this.profileService.followersList(userId);
+      return Response(
+        true,
+        'Successfully retrieved followers list.',
+        userFollowers,
+      );
+    } catch (error) {
+      return Response(true, 'Fail to get followers list.', error.message);
+    }
+  }
 }

@@ -142,7 +142,7 @@ export class ProfileService {
   // Request to Follow
   async requestToFollow(targetId: number, userId: number) {
     try {
-      const targetUser = await this.getUserData(userId);
+      const targetUser = await this.getUserData(targetId);
 
       if (!targetUser.is_private) {
         // If public, follow directly
@@ -231,7 +231,7 @@ export class ProfileService {
     }
   }
 
-  // Unfollow user
+  // Unfollow User
   async unfollowUser(targetId: number, userId: number) {
     try {
       await this.prisma.followers.deleteMany({
@@ -239,6 +239,33 @@ export class ProfileService {
       });
 
       return { message: 'Unfollowed successfully.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Followers List
+  async followersList(userId: number) {
+    try {
+      const followers = await this.prisma.followers.findMany({
+        where: { followingId: userId },
+        include: {
+          follower: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profile_picture: true,
+            },
+          },
+        },
+        omit: { id: true, followerId: true, followingId: true },
+      });
+      if (followers.length === 0) {
+        throw new NotFoundException('No followers found.');
+      }
+
+      return followers;
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
