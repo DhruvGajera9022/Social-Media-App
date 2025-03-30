@@ -237,4 +237,27 @@ export class ProfileController {
       return Response(true, 'Fail to get followers list.', error.message);
     }
   }
+
+  // 📌 Get Following
+  @ApiOperation({ summary: 'Get Following List' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved following list.',
+  })
+  @ApiResponse({ status: 400, description: 'Fail retrieved following list.' })
+  @Get('following')
+  @UseGuards(JwtAuthGuard)
+  async getFollowing(@Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const userFollowing = await this.profileService.followingList(userId);
+      return Response(
+        true,
+        'Successfully retrieved following list.',
+        userFollowing,
+      );
+    } catch (error) {
+      return Response(true, 'Fail to get following list.', error.message);
+    }
+  }
 }

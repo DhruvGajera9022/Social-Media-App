@@ -270,4 +270,31 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  // Following List
+  async followingList(userId: number) {
+    try {
+      const following = await this.prisma.followers.findMany({
+        where: { followerId: userId },
+        include: {
+          following: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profile_picture: true,
+            },
+          },
+        },
+        omit: { id: true, followerId: true, followingId: true },
+      });
+      if (following.length === 0) {
+        throw new NotFoundException('No following found.');
+      }
+
+      return following;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }
