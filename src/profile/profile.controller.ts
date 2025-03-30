@@ -33,11 +33,11 @@ export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   // Get user profile
+  @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @Get()
-  @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req) {
     try {
       const profile = await this.profileService.getProfile(+req.user.userId);
@@ -48,12 +48,12 @@ export class ProfileController {
   }
 
   // Edit Profile
+  @Patch()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Edit user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseGuards(JwtAuthGuard)
-  @Patch()
   async editProfile(@Req() req, @Body() editProfileDto: EditProfileDTO) {
     try {
       const editProfile = await this.profileService.editProfile(
@@ -68,6 +68,7 @@ export class ProfileController {
 
   // 📌 Update Profile Picture Separately
   @Patch('profile-picture')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Edit user profile-picture' })
   @ApiResponse({
     status: 200,
@@ -75,7 +76,6 @@ export class ProfileController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('profile_picture', {
       storage: diskStorage({
@@ -116,6 +116,7 @@ export class ProfileController {
 
   // 📌 Remove Profile Picture
   @Patch('remove-profile-picture')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Remove user profile-picture' })
   @ApiResponse({
     status: 200,
@@ -123,7 +124,6 @@ export class ProfileController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseGuards(JwtAuthGuard)
   async removeProfilePicture(@Req() req) {
     try {
       const userId = +req.user.userId;
@@ -140,11 +140,11 @@ export class ProfileController {
   }
 
   // 📌 Request to Follow
+  @Post(':id/follow')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Send a follow request' })
   @ApiResponse({ status: 201, description: 'Follow request sent.' })
   @ApiResponse({ status: 400, description: 'Follow request already sent.' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/follow')
   async requestToFollow(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
@@ -159,11 +159,11 @@ export class ProfileController {
   }
 
   // 📌 Accept Follow Request
+  @Post(':id/accept-follow')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Accept a follow request' })
   @ApiResponse({ status: 200, description: 'Follow request accepted.' })
   @ApiResponse({ status: 400, description: 'No follow request found.' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/accept-follow')
   async acceptFollow(@Param('id') requesterId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
@@ -178,11 +178,11 @@ export class ProfileController {
   }
 
   // 📌 Cancel Follow Request
+  @Post(':id/cancel-request')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Cancel a follow request' })
   @ApiResponse({ status: 200, description: 'Follow request canceled.' })
   @ApiResponse({ status: 400, description: 'No follow request found.' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/cancel-request')
   async cancelFollowRequest(@Req() req, @Param('id') targetId: number) {
     try {
       const requesterId = req.user.userId;
@@ -197,11 +197,11 @@ export class ProfileController {
   }
 
   // 📌 Unfollow User
+  @Post(':id/unfollow')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Unfollow a user' })
   @ApiResponse({ status: 200, description: 'Unfollowed successfully.' })
   @ApiResponse({ status: 400, description: 'You are not following this user.' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/unfollow')
   async unfollow(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
@@ -216,14 +216,14 @@ export class ProfileController {
   }
 
   // 📌 Get Followers
+  @Get('followers')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get Followers List' })
   @ApiResponse({
     status: 200,
     description: 'Successfully retrieved followers list.',
   })
   @ApiResponse({ status: 400, description: 'Fail retrieved followers list.' })
-  @Get('followers')
-  @UseGuards(JwtAuthGuard)
   async getFollowers(@Req() req) {
     try {
       const userId = +req.user.userId;
@@ -239,14 +239,14 @@ export class ProfileController {
   }
 
   // 📌 Get Following
+  @Get('following')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get Following List' })
   @ApiResponse({
     status: 200,
     description: 'Successfully retrieved following list.',
   })
   @ApiResponse({ status: 400, description: 'Fail retrieved following list.' })
-  @Get('following')
-  @UseGuards(JwtAuthGuard)
   async getFollowing(@Req() req) {
     try {
       const userId = +req.user.userId;
@@ -262,6 +262,8 @@ export class ProfileController {
   }
 
   // 📌 Block User
+  @Post(':id/block')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Block a user',
   })
@@ -273,8 +275,6 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
-  @Post(':id/block')
-  @UseGuards(JwtAuthGuard)
   async blockUser(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
@@ -289,6 +289,8 @@ export class ProfileController {
   }
 
   // 📌 Unblock User
+  @Post(':id/unblock')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Unblock a user',
   })
@@ -300,8 +302,6 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
-  @Post(':id/unblock')
-  @UseGuards(JwtAuthGuard)
   async unblockUser(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
@@ -316,6 +316,8 @@ export class ProfileController {
   }
 
   // 📌 Check user block
+  @Get(':id/is-blocked')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Check if a user is blocked' })
   @ApiResponse({
     status: 200,
@@ -327,8 +329,6 @@ export class ProfileController {
     description: 'Unauthorized. Missing or invalid JWT token.',
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  @Get(':id/is-blocked')
-  @UseGuards(JwtAuthGuard)
   async isUserBlocked(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;

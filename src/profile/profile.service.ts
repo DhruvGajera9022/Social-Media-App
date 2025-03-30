@@ -247,8 +247,16 @@ export class ProfileService {
   // Followers List
   async followersList(userId: number) {
     try {
+      // Get blocked user
+      const blockedUsers = await this.prisma.blockList.findMany({
+        where: { blockerId: userId },
+        select: { blockedId: true },
+      });
+
+      const blockedIds = blockedUsers.map((b) => b.blockedId);
+
       const followers = await this.prisma.followers.findMany({
-        where: { followingId: userId },
+        where: { followingId: userId, followerId: { notIn: blockedIds } },
         include: {
           follower: {
             select: {
