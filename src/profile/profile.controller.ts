@@ -33,11 +33,11 @@ export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   // Get user profile
+  @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @Get()
-  @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req) {
     try {
       const profile = await this.profileService.getProfile(+req.user.userId);
@@ -48,12 +48,12 @@ export class ProfileController {
   }
 
   // Edit Profile
+  @Patch()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Edit user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseGuards(JwtAuthGuard)
-  @Patch()
   async editProfile(@Req() req, @Body() editProfileDto: EditProfileDTO) {
     try {
       const editProfile = await this.profileService.editProfile(
@@ -68,6 +68,7 @@ export class ProfileController {
 
   // 📌 Update Profile Picture Separately
   @Patch('profile-picture')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Edit user profile-picture' })
   @ApiResponse({
     status: 200,
@@ -75,7 +76,6 @@ export class ProfileController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('profile_picture', {
       storage: diskStorage({
@@ -114,12 +114,37 @@ export class ProfileController {
     }
   }
 
+  // 📌 Remove Profile Picture
+  @Patch('remove-profile-picture')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Remove user profile-picture' })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile-Picture updated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async removeProfilePicture(@Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message } =
+        await this.profileService.removeProfilePicture(userId);
+      return { success: true, message };
+    } catch (error) {
+      return Response(
+        false,
+        'Fail to remove the profile-picture',
+        error.message,
+      );
+    }
+  }
+
   // 📌 Request to Follow
+  @Post(':id/follow')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Send a follow request' })
   @ApiResponse({ status: 201, description: 'Follow request sent.' })
   @ApiResponse({ status: 400, description: 'Follow request already sent.' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/follow')
   async requestToFollow(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
@@ -134,11 +159,11 @@ export class ProfileController {
   }
 
   // 📌 Accept Follow Request
+  @Post(':id/accept-follow')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Accept a follow request' })
   @ApiResponse({ status: 200, description: 'Follow request accepted.' })
   @ApiResponse({ status: 400, description: 'No follow request found.' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/accept-follow')
   async acceptFollow(@Param('id') requesterId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
@@ -153,11 +178,11 @@ export class ProfileController {
   }
 
   // 📌 Cancel Follow Request
+  @Post(':id/cancel-request')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Cancel a follow request' })
   @ApiResponse({ status: 200, description: 'Follow request canceled.' })
   @ApiResponse({ status: 400, description: 'No follow request found.' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/cancel-request')
   async cancelFollowRequest(@Req() req, @Param('id') targetId: number) {
     try {
       const requesterId = req.user.userId;
@@ -172,11 +197,11 @@ export class ProfileController {
   }
 
   // 📌 Unfollow User
+  @Post(':id/unfollow')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Unfollow a user' })
   @ApiResponse({ status: 200, description: 'Unfollowed successfully.' })
   @ApiResponse({ status: 400, description: 'You are not following this user.' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/unfollow')
   async unfollow(@Param('id') targetId: string, @Req() req) {
     try {
       const userId = +req.user.userId;
@@ -187,6 +212,137 @@ export class ProfileController {
       return { status: false, message };
     } catch (error) {
       return Response(false, 'Fail to unfollow user.', error);
+    }
+  }
+
+  // 📌 Get Followers
+  @Get('followers')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Followers List' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved followers list.',
+  })
+  @ApiResponse({ status: 400, description: 'Fail retrieved followers list.' })
+  async getFollowers(@Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const userFollowers = await this.profileService.followersList(userId);
+      return Response(
+        true,
+        'Successfully retrieved followers list.',
+        userFollowers,
+      );
+    } catch (error) {
+      return Response(true, 'Fail to get followers list.', error.message);
+    }
+  }
+
+  // 📌 Get Following
+  @Get('following')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Following List' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved following list.',
+  })
+  @ApiResponse({ status: 400, description: 'Fail retrieved following list.' })
+  async getFollowing(@Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const userFollowing = await this.profileService.followingList(userId);
+      return Response(
+        true,
+        'Successfully retrieved following list.',
+        userFollowing,
+      );
+    } catch (error) {
+      return Response(true, 'Fail to get following list.', error.message);
+    }
+  }
+
+  // 📌 Block User
+  @Post(':id/block')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Block a user',
+  })
+  @ApiResponse({ status: 200, description: 'User blocked successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async blockUser(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message } = await this.profileService.blockUser(
+        userId,
+        +targetId,
+      );
+      return { success: true, message };
+    } catch (error) {
+      return Response(false, 'Fail to block user.', error.message);
+    }
+  }
+
+  // 📌 Unblock User
+  @Post(':id/unblock')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Unblock a user',
+  })
+  @ApiResponse({ status: 200, description: 'User unblocked successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async unblockUser(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message } = await this.profileService.unblockUser(
+        userId,
+        +targetId,
+      );
+      return { success: true, message };
+    } catch (error) {
+      return Response(false, 'Fail to unblock user.', error.message);
+    }
+  }
+
+  // 📌 Check user block
+  @Get(':id/is-blocked')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Check if a user is blocked' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns whether the user is blocked.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async isUserBlocked(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const isBlocked = await this.profileService.isUserBlocked(
+        userId,
+        +targetId,
+      );
+      return { success: true, isBlocked };
+    } catch (error) {
+      return Response(
+        false,
+        'Fail to check user is blocked or not.',
+        error.message,
+      );
     }
   }
 }

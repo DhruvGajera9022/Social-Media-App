@@ -9,7 +9,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { EditProfileDTO } from './dto/edit-profile.dto';
 import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
-import { uploadToCloudinary } from 'src/utils/cloudinary.util';
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from 'src/utils/cloudinary.util';
 
 @Injectable()
 export class ProfileService {
@@ -19,6 +22,17 @@ export class ProfileService {
       api_key: process.env.CLOUDINARY_API_KEY,
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
+  }
+
+  // Get User By Id
+  async getUserData(userId: number) {
+    // Find user
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    return user;
   }
 
   // Get Profile
@@ -49,14 +63,11 @@ export class ProfileService {
 
     try {
       // Find user
-      const user = await this.prisma.users.findUnique({
-        where: { id: userId },
-      });
-      if (!user) throw new NotFoundException('User not found');
+      const user = await this.getUserData(userId);
 
       // Update user
       const updateUser = await this.prisma.users.update({
-        where: { id: userId },
+        where: { id: user.id },
         data: {
           firstName,
           lastName,
@@ -75,12 +86,7 @@ export class ProfileService {
   // Edit Profile Picture
   async editProfilePicture(userId: number, file?: Express.Multer.File) {
     try {
-      const user = await this.prisma.users.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
+      const user = await this.getUserData(userId);
 
       // Handle file upload if present
       let file_url = user.profile_picture; // Keep old picture if no new upload
@@ -96,7 +102,7 @@ export class ProfileService {
       }
 
       await this.prisma.users.update({
-        where: { id: userId },
+        where: { id: user.id },
         data: {
           profile_picture: file_url,
         },
@@ -115,15 +121,28 @@ export class ProfileService {
     }
   }
 
+  // Remove Profile Picture
+  async removeProfilePicture(userId: number) {
+    try {
+      const user = await this.getUserData(userId);
+
+      await deleteFromCloudinary(user.profile_picture);
+
+      await this.prisma.users.update({
+        where: { id: user.id },
+        data: { profile_picture: '' },
+      });
+
+      return { message: 'Profile-Picture removed.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
   // Request to Follow
   async requestToFollow(targetId: number, userId: number) {
     try {
-      const targetUser = await this.prisma.users.findUnique({
-        where: { id: targetId },
-      });
-      if (!targetUser) {
-        throw new NotFoundException('User not found');
-      }
+      const targetUser = await this.getUserData(targetId);
 
       if (!targetUser.is_private) {
         // If public, follow directly
@@ -212,7 +231,7 @@ export class ProfileService {
     }
   }
 
-  // Unfollow user
+  // Unfollow User
   async unfollowUser(targetId: number, userId: number) {
     try {
       await this.prisma.followers.deleteMany({
@@ -224,4 +243,120 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  // Followers List
+  async followersList(userId: number) {
+    try {
+      // Get blocked user
+      const blockedUsers = await this.prisma.blockList.findMany({
+        where: { blockerId: userId },
+        select: { blockedId: true },
+      });
+
+      const blockedIds = blockedUsers.map((b) => b.blockedId);
+
+      const followers = await this.prisma.followers.findMany({
+        where: { followingId: userId, followerId: { notIn: blockedIds } },
+        include: {
+          follower: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profile_picture: true,
+            },
+          },
+        },
+        omit: { id: true, followerId: true, followingId: true },
+      });
+      if (followers.length === 0) {
+        throw new NotFoundException('No followers found.');
+      }
+
+      return followers;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Following List
+  async followingList(userId: number) {
+    try {
+      const following = await this.prisma.followers.findMany({
+        where: { followerId: userId },
+        include: {
+          following: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profile_picture: true,
+            },
+          },
+        },
+        omit: { id: true, followerId: true, followingId: true },
+      });
+      if (following.length === 0) {
+        throw new NotFoundException('No following found.');
+      }
+
+      return following;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Block User
+  async blockUser(userId: number, targetId: number) {
+    try {
+      const existingBlock = await this.prisma.blockList.findFirst({
+        where: { blockerId: userId, blockedId: targetId },
+      });
+      if (existingBlock) {
+        throw new ConflictException('User is already blocked.');
+      }
+
+      await this.prisma.blockList.create({
+        data: { blockerId: userId, blockedId: targetId },
+      });
+
+      return { message: 'User blocked.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Unblock User
+  async unblockUser(userId: number, targetId: number) {
+    try {
+      const deletedBlock = await this.prisma.blockList.deleteMany({
+        where: { blockerId: userId, blockedId: targetId },
+      });
+      if (!deletedBlock.count) {
+        throw new NotFoundException('User is not blocked.');
+      }
+
+      return { message: 'User unblocked successfully' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Check if user id blocked
+  async isUserBlocked(userId: number, targetId: number): Promise<boolean> {
+    try {
+      const block = await this.prisma.blockList.findFirst({
+        where: { blockerId: userId, blockedId: targetId },
+      });
+
+      return !!block;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // TODO mutual-friends - Get
+  // TODO deactivate - Patch
+  // TODO delete account - Delete
+  // TODO visit-history - Get
 }
