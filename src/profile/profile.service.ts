@@ -354,4 +354,9 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  // TODO mutual-friends - Get
+  // TODO deactivate - Patch
+  // TODO delete account - Delete
+  // TODO visit-history - Get
 }
