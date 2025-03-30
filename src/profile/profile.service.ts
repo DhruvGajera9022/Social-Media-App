@@ -24,6 +24,17 @@ export class ProfileService {
     });
   }
 
+  // Get User By Id
+  async getUserData(userId: number) {
+    // Find user
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    return user;
+  }
+
   // Get Profile
   async getProfile(userId: number) {
     const user = await this.prisma.users.findUnique({
@@ -52,14 +63,11 @@ export class ProfileService {
 
     try {
       // Find user
-      const user = await this.prisma.users.findUnique({
-        where: { id: userId },
-      });
-      if (!user) throw new NotFoundException('User not found');
+      const user = await this.getUserData(userId);
 
       // Update user
       const updateUser = await this.prisma.users.update({
-        where: { id: userId },
+        where: { id: user.id },
         data: {
           firstName,
           lastName,
@@ -78,12 +86,7 @@ export class ProfileService {
   // Edit Profile Picture
   async editProfilePicture(userId: number, file?: Express.Multer.File) {
     try {
-      const user = await this.prisma.users.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
+      const user = await this.getUserData(userId);
 
       // Handle file upload if present
       let file_url = user.profile_picture; // Keep old picture if no new upload
@@ -99,7 +102,7 @@ export class ProfileService {
       }
 
       await this.prisma.users.update({
-        where: { id: userId },
+        where: { id: user.id },
         data: {
           profile_picture: file_url,
         },
@@ -121,17 +124,12 @@ export class ProfileService {
   // Remove Profile Picture
   async removeProfilePicture(userId: number) {
     try {
-      const user = await this.prisma.users.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        throw new NotFoundException('User not found.');
-      }
+      const user = await this.getUserData(userId);
 
       await deleteFromCloudinary(user.profile_picture);
 
       await this.prisma.users.update({
-        where: { id: userId },
+        where: { id: user.id },
         data: { profile_picture: '' },
       });
 
@@ -144,12 +142,7 @@ export class ProfileService {
   // Request to Follow
   async requestToFollow(targetId: number, userId: number) {
     try {
-      const targetUser = await this.prisma.users.findUnique({
-        where: { id: targetId },
-      });
-      if (!targetUser) {
-        throw new NotFoundException('User not found');
-      }
+      const targetUser = await this.getUserData(userId);
 
       if (!targetUser.is_private) {
         // If public, follow directly
