@@ -114,6 +114,31 @@ export class ProfileController {
     }
   }
 
+  // 📌 Remove Profile Picture
+  @Patch('remove-profile-picture')
+  @ApiOperation({ summary: 'Remove user profile-picture' })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile-Picture updated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @UseGuards(JwtAuthGuard)
+  async removeProfilePicture(@Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message } =
+        await this.profileService.removeProfilePicture(userId);
+      return { success: true, message };
+    } catch (error) {
+      return Response(
+        false,
+        'Fail to remove the profile-picture',
+        error.message,
+      );
+    }
+  }
+
   // 📌 Request to Follow
   @ApiOperation({ summary: 'Send a follow request' })
   @ApiResponse({ status: 201, description: 'Follow request sent.' })

@@ -16,3 +16,17 @@ export const uploadToCloudinary = (
     });
   });
 };
+
+// Delete image from Cloudinary
+export const deleteFromCloudinary = (
+  publicId: string,
+): Promise<{ result: string }> => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.destroy(publicId, (error, result) => {
+      if (error) return reject(error);
+      if (!result) return reject(new Error('Deletion failed'));
+
+      resolve({ result });
+    });
+  });
+};

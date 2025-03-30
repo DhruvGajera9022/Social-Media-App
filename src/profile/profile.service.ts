@@ -9,7 +9,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { EditProfileDTO } from './dto/edit-profile.dto';
 import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
-import { uploadToCloudinary } from 'src/utils/cloudinary.util';
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from 'src/utils/cloudinary.util';
 
 @Injectable()
 export class ProfileService {
@@ -112,6 +115,29 @@ export class ProfileService {
         'Error in edit profile-picture',
         error,
       );
+    }
+  }
+
+  // Remove Profile Picture
+  async removeProfilePicture(userId: number) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found.');
+      }
+
+      await deleteFromCloudinary(user.profile_picture);
+
+      await this.prisma.users.update({
+        where: { id: userId },
+        data: { profile_picture: '' },
+      });
+
+      return { message: 'Profile-Picture removed.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
     }
   }
 
