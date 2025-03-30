@@ -33,6 +33,8 @@ model Users {
   followRequestsSent     FollowRequests[] @relation("FollowRequestsSent")
   followRequestsReceived FollowRequests[] @relation("FollowRequestsReceived")
   PostLikes              PostLikes[]
+  blockedBy              BlockList[]      @relation("BlockedRelation")
+  blocking               BlockList[]      @relation("BlockerRelation")
 }
 
 model RefreshToken {
@@ -106,4 +108,15 @@ model FollowRequests {
   target      Users @relation("FollowRequestsReceived", fields: [targetId], references: [id])
 
   @@unique([requesterId, targetId]) // Ensure a user can't request twice
+}
+
+model BlockList {
+  id        Int @id @default(autoincrement())
+  blockerId Int
+  blockedId Int
+
+  blocker Users @relation(fields: [blockerId], references: [id], name: "BlockerRelation")
+  blocked Users @relation(fields: [blockedId], references: [id], name: "BlockedRelation")
+
+  @@unique([blockerId, blockedId])
 }

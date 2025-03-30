@@ -297,4 +297,24 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  // Block User
+  async blockUser(userId: number, targetId: number) {
+    try {
+      const existingBlock = await this.prisma.blockList.findFirst({
+        where: { blockerId: userId, blockedId: targetId },
+      });
+      if (existingBlock) {
+        throw new ConflictException('User is already blocked.');
+      }
+
+      await this.prisma.blockList.create({
+        data: { blockerId: userId, blockedId: targetId },
+      });
+
+      return { message: 'User blocked.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }

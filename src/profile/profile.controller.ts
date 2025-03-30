@@ -260,4 +260,20 @@ export class ProfileController {
       return Response(true, 'Fail to get following list.', error.message);
     }
   }
+
+  // 📌 Block User
+  @Post(':id/block')
+  @UseGuards(JwtAuthGuard)
+  async blockUser(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message } = await this.profileService.blockUser(
+        userId,
+        +targetId,
+      );
+      return { success: true, message };
+    } catch (error) {
+      return Response(false, 'Fail to block user.', error.message);
+    }
+  }
 }
