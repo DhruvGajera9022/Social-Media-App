@@ -345,4 +345,76 @@ export class ProfileController {
       );
     }
   }
+
+  // 📌 Get Mutual Followers
+  @Get(':id/mutual-followers')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get mutual followers.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mutual followers fetched successfully.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async mutualFollowers(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const mutualFollowers = await this.profileService.getMutualFollowers(
+        +targetId,
+        userId,
+      );
+      return Response(
+        true,
+        'Mutual followers fetched successfully.',
+        mutualFollowers,
+      );
+    } catch (error) {
+      return Response(false, 'Fail to get mutual followers.', error.message);
+    }
+  }
+
+  // 📌 Deactivate Account
+  @Patch('deactivate')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Deactivate account.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Account deactivated successfully.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async deactivateAccount(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const { message } = await this.profileService.deactivateAccount(userId);
+      return { status: true, message };
+    } catch (error) {
+      return Response(false, 'Fail to get mutual followers.', error.message);
+    }
+  }
+
+  // 📌 Search User
+  @Get('search/:query')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Search users by name' })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results fetched successfully',
+  })
+  async searchUser(@Param('query') query: string) {
+    try {
+      const users = await this.profileService.searchUser(query);
+      return Response(true, 'Search results fetched successfully', users);
+    } catch (error) {
+      return Response(false, 'Fail to search user.');
+    }
+  }
 }
