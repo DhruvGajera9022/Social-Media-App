@@ -355,8 +355,8 @@ export class ProfileService {
     }
   }
 
-  // mutual-friends - Get
-  async getMutualFriends(userId: number, targetId: number) {
+  // Mutual Followers
+  async getMutualFollowers(userId: number, targetId: number) {
     try {
       // Fetch followers of userId
       const userFollowers = await this.prisma.users.findUnique({
@@ -385,7 +385,21 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
-  // TODO deactivate - Patch
+
+  // Deactivate Account - Patch
+  async deactivateAccount(userId: number) {
+    try {
+      const user = await this.getUserData(userId);
+      await this.prisma.users.update({
+        where: { id: user.id },
+        data: { is_active: false },
+      });
+
+      return { message: 'Account deactivated successfully.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
   // TODO delete account - Delete
   // TODO visit-history - Get
 }
