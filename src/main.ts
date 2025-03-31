@@ -18,8 +18,8 @@ async function bootstrap() {
 
   // config for api documentation
   const config = new DocumentBuilder()
-    .setTitle('Nest.js Project')
-    .setDescription('API documentation for out Nest.js application')
+    .setTitle('Social Media App')
+    .setDescription('API documentation for out Social Media App')
     .setVersion('1.0')
     .addBearerAuth()
     .addSecurityRequirements('bearer')
