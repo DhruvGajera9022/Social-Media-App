@@ -345,4 +345,35 @@ export class ProfileController {
       );
     }
   }
+
+  // 📌 Get Mutual Followers
+  @Get(':id/mutual-followers')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get mutual followers' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mutual followers fetched successfully.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Missing or invalid JWT token.',
+  })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async mutualFollowers(@Param('id') targetId: string, @Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const mutualFollowers = await this.profileService.getMutualFriends(
+        +targetId,
+        userId,
+      );
+      return Response(
+        true,
+        'Mutual followers fetched successfully.',
+        mutualFollowers,
+      );
+    } catch (error) {
+      return Response(false, 'Fail to get mutual followers.', error.message);
+    }
+  }
 }

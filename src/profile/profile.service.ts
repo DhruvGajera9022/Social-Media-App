@@ -355,7 +355,36 @@ export class ProfileService {
     }
   }
 
-  // TODO mutual-friends - Get
+  // mutual-friends - Get
+  async getMutualFriends(userId: number, targetId: number) {
+    try {
+      // Fetch followers of userId
+      const userFollowers = await this.prisma.users.findUnique({
+        where: { id: userId },
+        include: { followers: { select: { id: true } } },
+      });
+
+      // Fetch followers of targetId
+      const targetFollowers = await this.prisma.users.findUnique({
+        where: { id: userId },
+        include: { followers: { select: { id: true } } },
+      });
+
+      if (!userFollowers || !targetFollowers) {
+        throw new NotFoundException('One or both users not found.');
+      }
+
+      // Convert followers to sets for easy comparison
+      const userFollowerIds = new Set(userFollowers.followers.map((f) => f.id));
+      const mutualFriends = targetFollowers.followers.filter((f) =>
+        userFollowerIds.has(f.id),
+      );
+
+      return mutualFriends;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
   // TODO deactivate - Patch
   // TODO delete account - Delete
   // TODO visit-history - Get
