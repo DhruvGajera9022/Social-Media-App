@@ -400,4 +400,21 @@ export class ProfileController {
       return Response(false, 'Fail to get mutual followers.', error.message);
     }
   }
+
+  // 📌 Search User
+  @Get('search/:query')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Search users by name' })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results fetched successfully',
+  })
+  async searchUser(@Param('query') query: string) {
+    try {
+      const users = await this.profileService.searchUser(query);
+      return Response(true, 'Search results fetched successfully', users);
+    } catch (error) {
+      return Response(false, 'Fail to search user.');
+    }
+  }
 }

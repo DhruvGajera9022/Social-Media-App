@@ -386,7 +386,7 @@ export class ProfileService {
     }
   }
 
-  // Deactivate Account - Patch
+  // Deactivate Account
   async deactivateAccount(userId: number) {
     try {
       const user = await this.getUserData(userId);
@@ -400,6 +400,29 @@ export class ProfileService {
       throw new InternalServerErrorException(error);
     }
   }
-  // TODO delete account - Delete
-  // TODO visit-history - Get
+
+  // Search User
+  async searchUser(query: string) {
+    try {
+      const user = await this.prisma.users.findMany({
+        where: {
+          OR: [
+            { firstName: { contains: query, mode: 'insensitive' } },
+            { lastName: { contains: query, mode: 'insensitive' } },
+          ],
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          profile_picture: true,
+        },
+        take: 10,
+      });
+
+      return user;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }
