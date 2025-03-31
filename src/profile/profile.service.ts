@@ -29,9 +29,16 @@ export class ProfileService {
     // Find user
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        is_private: true,
+        profile_picture: true,
+      },
     });
     if (!user) throw new NotFoundException('User not found');
-
     return user;
   }
 
@@ -43,7 +50,12 @@ export class ProfileService {
         _count: { select: { followers: true, following: true } },
         posts: {
           orderBy: [{ pinned: 'desc' }, { created_at: 'desc' }],
-          omit: { userId: true },
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            created_at: true,
+          },
         },
       },
       omit: { password: true },
@@ -51,7 +63,6 @@ export class ProfileService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     return user;
   }
 
@@ -62,22 +73,17 @@ export class ProfileService {
       typeof is_private === 'string' ? is_private === 'true' : !!is_private;
 
     try {
-      // Find user
-      const user = await this.getUserData(userId);
-
-      // Update user
-      const updateUser = await this.prisma.users.update({
-        where: { id: user.id },
-        data: {
-          firstName,
-          lastName,
-          email,
-          is_private: convertIsPrivate,
+      return await this.prisma.users.update({
+        where: { id: userId },
+        data: { firstName, lastName, email, is_private: convertIsPrivate },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          is_private: true,
         },
-        omit: { password: true },
       });
-
-      return updateUser;
     } catch (error) {
       throw new InternalServerErrorException('Error in edit profile', error);
     }
@@ -106,7 +112,6 @@ export class ProfileService {
         data: {
           profile_picture: file_url,
         },
-        omit: { password: true },
       });
       return { message: 'Profile picture updated.' };
     } catch (error) {
@@ -359,28 +364,28 @@ export class ProfileService {
   async getMutualFollowers(userId: number, targetId: number) {
     try {
       // Fetch followers of userId
-      const userFollowers = await this.prisma.users.findUnique({
-        where: { id: userId },
-        include: { followers: { select: { id: true } } },
+      const userFollowers = await this.prisma.followers.findMany({
+        where: { followingId: userId },
+        select: { followerId: true },
       });
 
       // Fetch followers of targetId
-      const targetFollowers = await this.prisma.users.findUnique({
-        where: { id: userId },
-        include: { followers: { select: { id: true } } },
+      const targetFollowers = await this.prisma.followers.findMany({
+        where: { followingId: targetId },
+        select: { followerId: true },
       });
 
-      if (!userFollowers || !targetFollowers) {
-        throw new NotFoundException('One or both users not found.');
+      if (!userFollowers.length || !targetFollowers.length) {
+        throw new NotFoundException('No mutual followers found.');
       }
 
       // Convert followers to sets for easy comparison
-      const userFollowerIds = new Set(userFollowers.followers.map((f) => f.id));
-      const mutualFriends = targetFollowers.followers.filter((f) =>
-        userFollowerIds.has(f.id),
-      );
+      const userFollowerIds = new Set(userFollowers.map((f) => f.followerId));
+      const mutualFollowers = targetFollowers
+        .filter((f) => userFollowerIds.has(f.followerId))
+        .map((f) => f.followerId);
 
-      return mutualFriends;
+      return mutualFollowers;
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
