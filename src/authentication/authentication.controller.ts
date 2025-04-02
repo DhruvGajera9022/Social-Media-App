@@ -117,14 +117,14 @@ export class AuthenticationController {
   }
 
   // handle the refresh token
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @ApiOperation({ summary: 'Refresh access token using a refresh token' })
   @ApiResponse({
     status: 200,
     description: 'New access token generated successfully',
   })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
-  @Post('refresh')
   async refreshTokens(@Body() refreshTokenDto: RefreshTokenDTO) {
     try {
       const refresh =
@@ -140,14 +140,14 @@ export class AuthenticationController {
   }
 
   // handle change password
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT) // 204 No Content (best practice for password change)
   @ApiOperation({ summary: 'Change user password' })
   @ApiBearerAuth() // Adds Bearer token authentication in Swagger
   @ApiResponse({ status: 204, description: 'Password changed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.NO_CONTENT) // 204 No Content (best practice for password change)
-  @Patch('change-password')
   async changePassword(
     @Req() req,
     @Body() changePasswordDto: ChangePasswordDTO,
@@ -164,6 +164,8 @@ export class AuthenticationController {
   }
 
   // handle forgot password
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @ApiOperation({
     summary: 'Send password reset instructions to the user email',
   })
@@ -173,8 +175,6 @@ export class AuthenticationController {
   })
   @ApiResponse({ status: 400, description: 'Invalid email format' })
   @ApiResponse({ status: 404, description: 'Email not found' })
-  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
-  @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDTO) {
     try {
       const forgotPassword =
@@ -186,12 +186,12 @@ export class AuthenticationController {
   }
 
   // handle reset password
+  @Patch('reset-password')
+  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @ApiOperation({ summary: 'Reset user password using a reset token' })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 401, description: 'Invalid or expired reset token' })
-  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
-  @Patch('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDTO) {
     try {
       const resetPassword =
