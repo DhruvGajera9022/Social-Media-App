@@ -407,14 +407,25 @@ export class ProfileService {
   }
 
   // Search User
-  async searchUser(query: string) {
+  async searchUser(userId: number, query: string) {
     try {
-      const user = await this.prisma.users.findMany({
+      if (!query.trim()) {
+        throw new Error('Search query cannot be empty');
+      }
+
+      // Fetch followers and following first
+      const followersAndFollowing = await this.prisma.users.findMany({
         where: {
           OR: [
             { firstName: { contains: query, mode: 'insensitive' } },
             { lastName: { contains: query, mode: 'insensitive' } },
           ],
+          AND: {
+            OR: [
+              { followers: { some: { id: userId } } }, // User follows them
+              { following: { some: { id: userId } } }, // They follow the user
+            ],
+          },
         },
         select: {
           id: true,
@@ -425,7 +436,27 @@ export class ProfileService {
         take: 10,
       });
 
-      return user;
+      // Fetch other users who are not in followers or following
+      const otherUsers = await this.prisma.users.findMany({
+        where: {
+          OR: [
+            { firstName: { contains: query, mode: 'insensitive' } },
+            { lastName: { contains: query, mode: 'insensitive' } },
+          ],
+          NOT: {
+            OR: followersAndFollowing.map((user) => ({ id: user.id })),
+          },
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          profile_picture: true,
+        },
+        take: 10 - followersAndFollowing.length,
+      });
+
+      return [...followersAndFollowing, ...otherUsers];
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

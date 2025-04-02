@@ -409,9 +409,10 @@ export class ProfileController {
     status: 200,
     description: 'Search results fetched successfully',
   })
-  async searchUser(@Param('query') query: string) {
+  async searchUser(@Param('query') query: string, @Req() req) {
     try {
-      const users = await this.profileService.searchUser(query);
+      const userId = +req.user.userId;
+      const users = await this.profileService.searchUser(userId, query);
       return Response(true, 'Search results fetched successfully', users);
     } catch (error) {
       return Response(false, 'Fail to search user.');
