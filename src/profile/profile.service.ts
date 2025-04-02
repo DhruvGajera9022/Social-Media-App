@@ -754,7 +754,7 @@ export class ProfileService {
                 { lastName: { contains: trimmedQuery, mode: 'insensitive' } },
               ],
             },
-            { id: { notIn: blockedIds } }, // Exclude blocked users
+            { id: { notIn: [...blockedIds, userId] } }, // Exclude blocked users
             { is_active: true }, // Only active users
             {
               OR: [
@@ -786,7 +786,7 @@ export class ProfileService {
                 { lastName: { contains: trimmedQuery, mode: 'insensitive' } },
               ],
             },
-            { id: { notIn: blockedIds } },
+            { id: { notIn: [...blockedIds, userId] } },
             { is_active: true },
             {
               OR: [
@@ -818,6 +818,7 @@ export class ProfileService {
               id: {
                 notIn: [
                   ...blockedIds,
+                  userId,
                   ...followersAndFollowing.map((u) => u.id),
                 ],
               },
@@ -851,6 +852,7 @@ export class ProfileService {
               id: {
                 notIn: [
                   ...blockedIds,
+                  userId,
                   ...followersAndFollowing.map((u) => u.id),
                 ],
               },
