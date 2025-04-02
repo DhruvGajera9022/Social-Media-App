@@ -443,6 +443,53 @@ export class ProfileService {
     }
   }
 
+  // Get Follow Requests
+  async getFollowRequests(userId: number) {
+    try {
+      await this.getUserData(userId);
+
+      // Get total count for pagination info
+      const totalCount = await this.prisma.followRequests.count({
+        where: { targetId: userId },
+      });
+
+      const requests = await this.prisma.followRequests.findMany({
+        where: { targetId: userId },
+        include: {
+          requester: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profile_picture: true,
+            },
+          },
+        },
+      });
+
+      // Transform the response for better API consumption
+      const formattedRequests = requests.map((r) => ({
+        requestId: r.id,
+        user: {
+          id: r.requester.id,
+          firstName: r.requester.firstName,
+          lastName: r.requester.lastName,
+          profile_picture: r.requester.profile_picture,
+        },
+      }));
+
+      return {
+        requests: formattedRequests,
+        total: totalCount,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve follow requests',
+        error.message,
+      );
+    }
+  }
+
   // Block User
   async blockUser(userId: number, targetId: number) {
     try {
@@ -536,7 +583,7 @@ export class ProfileService {
     }
   }
 
-  // Get Blocked Users List with pagination
+  // Get Blocked Users List
   async getBlockedUsers(userId: number) {
     try {
       await this.getUserData(userId);
@@ -671,7 +718,7 @@ export class ProfileService {
     }
   }
 
-  // Search User with pagination
+  // Search User
   async searchUser(userId: number, query: string) {
     try {
       await this.getUserData(userId);
@@ -842,53 +889,6 @@ export class ProfileService {
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to search users',
-        error.message,
-      );
-    }
-  }
-
-  // Get Follow Requests with pagination
-  async getFollowRequests(userId: number) {
-    try {
-      await this.getUserData(userId);
-
-      // Get total count for pagination info
-      const totalCount = await this.prisma.followRequests.count({
-        where: { targetId: userId },
-      });
-
-      const requests = await this.prisma.followRequests.findMany({
-        where: { targetId: userId },
-        include: {
-          requester: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              profile_picture: true,
-            },
-          },
-        },
-      });
-
-      // Transform the response for better API consumption
-      const formattedRequests = requests.map((r) => ({
-        requestId: r.id,
-        user: {
-          id: r.requester.id,
-          firstName: r.requester.firstName,
-          lastName: r.requester.lastName,
-          profile_picture: r.requester.profile_picture,
-        },
-      }));
-
-      return {
-        requests: formattedRequests,
-        total: totalCount,
-      };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to retrieve follow requests',
         error.message,
       );
     }
