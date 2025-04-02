@@ -37,11 +37,11 @@ export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
 
   // Handle the new user registration
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED) // Ensures it returns 201 Created
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User successfully registered' })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  @Post('register')
-  @HttpCode(HttpStatus.CREATED) // Ensures it returns 201 Created
   async register(@Body() registerDto: RegisterDTO) {
     try {
       const register = await this.authenticationService.register(registerDto);
@@ -52,11 +52,11 @@ export class AuthenticationController {
   }
 
   // Handle user login
+  @Post('login')
+  @HttpCode(HttpStatus.OK) // Returns 200 instead of default 201 for POST
   @ApiOperation({ summary: 'Authenticate user and generate an access token' })
   @ApiResponse({ status: 200, description: 'User successfully authenticated' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @HttpCode(HttpStatus.OK) // Returns 200 instead of default 201 for POST
-  @Post('login')
   async login(@Body() loginDto: LoginDTO) {
     try {
       const login = await this.authenticationService.login(loginDto);
