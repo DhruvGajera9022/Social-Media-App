@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Req,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
@@ -25,7 +24,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Response } from 'src/utils/response.util';
-import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { GoogleOAuthGuard } from './guard/google-oauth.guard';
 import { TwitterAuthGuard } from './guard/twitter-oauth.guard';
@@ -59,6 +57,17 @@ export class AuthenticationController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDTO) {
     try {
+      const is2FA = await this.authenticationService.check2FA(loginDto.email);
+
+      // If 2FA is enabled, require 2FA verification
+      if (is2FA) {
+        return {
+          message: 'Two-factor authentication is required',
+          requiresTwoFactor: true,
+        };
+      }
+
+      // If 2FA not enabled, proceed with normal login
       const login = await this.authenticationService.login(loginDto);
       return Response(true, 'Login successful', login);
     } catch (error) {

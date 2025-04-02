@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -82,6 +83,19 @@ export class AuthenticationService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async check2FA(email: string): Promise<boolean> {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: { email },
+        select: { is_2fa: true },
+      });
+
+      return user?.is_2fa ?? false; // If user is null, return false
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
   }
 
   // Handle the user login
