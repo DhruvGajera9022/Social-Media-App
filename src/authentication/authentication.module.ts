@@ -10,6 +10,7 @@ import { MailService } from './service/mail.service';
 import { FacebookStrategy } from './strategy/facebook.strategy';
 import { GoogleStrategy } from './strategy/google.strategy';
 import { TwitterStrategy } from './strategy/twitter.strategy';
+import { ProfileModule } from 'src/profile/profile.module';
 // changes
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TwitterStrategy } from './strategy/twitter.strategy';
       inject: [ConfigService],
     }),
     ConfigModule,
+    ProfileModule,
   ],
   controllers: [AuthenticationController],
   providers: [

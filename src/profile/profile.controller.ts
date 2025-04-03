@@ -28,6 +28,7 @@ import {
 } from '@nestjs/swagger';
 import { Response } from 'src/utils/response.util';
 import { TwoFactorAuthDTO } from './dto/two-factor-auth.dto';
+import { TwoFactorAuthLoginDTO } from 'src/authentication/dto/2fa-auth.dto';
 
 @ApiTags('Profile') // Tags for api documentation
 @ApiBearerAuth() // Requires authentication in Swagger
@@ -474,6 +475,15 @@ export class ProfileController {
       const userId = +req.user.userId;
       const user = await this.profileService.getUserData(userId);
 
+      // Check if user already has 2FA secret (optional reset)
+      if (user.secret_2fa) {
+        return {
+          status: false,
+          message:
+            'Two-factor authentication is already set up. Disable it first to generate a new secret.',
+        };
+      }
+
       const { otpAuthUrl, secret } =
         await this.profileService.generateTwoFactorAuthenticationSecret(user);
 
@@ -509,10 +519,18 @@ export class ProfileController {
       const user = await this.profileService.getUserData(userId);
 
       // Check if 2FA is enabled or not
-      if (!user.is_2fa) {
+      if (!user.secret_2fa) {
         throw new BadRequestException(
           'Two-factor authentication is not set up yet. Generate a secret first.',
         );
+      }
+
+      // Check if 2FA is already enabled
+      if (user.is_2fa) {
+        return {
+          status: true,
+          message: 'Two-factor authentication is already enabled',
+        };
       }
 
       // Verify the code and secret
@@ -531,10 +549,43 @@ export class ProfileController {
       await this.profileService.enableTwoFactorAuth(user);
 
       return {
+        status: true,
         message: 'Two-factor authentication has been enabled',
       };
     } catch (error) {
       return Response(false, 'Fail to turn on 2FA', error.message);
+    }
+  }
+
+  // Authenticate with 2FA code after login
+  @Post('2fa/authenticate')
+  async authenticate2FA(@Body() twoFALoginDto: TwoFactorAuthLoginDTO) {
+    try {
+      const user = await this.profileService.getUserDataEmail(
+        twoFALoginDto.email,
+      );
+
+      if (!user.secret_2fa) {
+        throw new BadRequestException(
+          'Two-factor authentication is not set up for this user',
+        );
+      }
+
+      const isCodeValid =
+        await this.profileService.verifyTwoFactorAuthenticationCode(
+          twoFALoginDto.code,
+          user,
+        );
+
+      if (!isCodeValid) {
+        throw new UnauthorizedException('Invalid authentication code');
+      }
+
+      const login2FA = await this.profileService.loginWith2FA(user);
+
+      return Response(true, 'Two Factor Authentication Successfully', login2FA);
+    } catch (error) {
+      return Response(false, 'Fail to 2FA authentication', error.message);
     }
   }
 }

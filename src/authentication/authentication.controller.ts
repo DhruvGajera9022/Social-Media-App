@@ -1,12 +1,15 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  InternalServerErrorException,
   Patch,
   Post,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
@@ -28,11 +31,16 @@ import { Request } from 'express';
 import { GoogleOAuthGuard } from './guard/google-oauth.guard';
 import { TwitterAuthGuard } from './guard/twitter-oauth.guard';
 import { FacebookAuthGuard } from './guard/facebook-oauth.guard';
+import { TwoFactorAuthLoginDTO } from './dto/2fa-auth.dto';
+import { ProfileService } from 'src/profile/profile.service';
 
 @ApiTags('Authentication') // For api documentation tag
 @Controller('auth')
 export class AuthenticationController {
-  constructor(private readonly authenticationService: AuthenticationService) {}
+  constructor(
+    private readonly authenticationService: AuthenticationService,
+    private readonly profileService: ProfileService,
+  ) {}
 
   // Handle the new user registration
   @Post('register')
@@ -57,22 +65,42 @@ export class AuthenticationController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDTO) {
     try {
-      const is2FA = await this.authenticationService.check2FA(loginDto.email);
-
-      // If 2FA is enabled, require 2FA verification
-      if (is2FA) {
-        return {
-          status: true,
-          message: 'Two-factor authentication is required',
-          requiresTwoFactor: true,
-        };
-      }
-
-      // If 2FA not enabled, proceed with normal login
       const login = await this.authenticationService.login(loginDto);
       return Response(true, 'Login successful', login);
     } catch (error) {
       return Response(false, 'Failed to login.', error.message);
+    }
+  }
+
+  // Authenticate with 2FA code after login
+  @Post('2fa/authenticate')
+  async authenticate2FA(@Body() twoFALoginDto: TwoFactorAuthLoginDTO) {
+    try {
+      const user = await this.authenticationService.getUserData(
+        twoFALoginDto.email,
+      );
+
+      if (!user.secret_2fa) {
+        throw new BadRequestException(
+          'Two-factor authentication is not set up for this user',
+        );
+      }
+
+      const isCodeValid =
+        await this.profileService.verifyTwoFactorAuthenticationCode(
+          twoFALoginDto.code,
+          user,
+        );
+
+      if (!isCodeValid) {
+        throw new UnauthorizedException('Invalid authentication code');
+      }
+
+      const login2FA = await this.authenticationService.loginWith2FA(user);
+
+      return Response(true, 'Two Factor Authentication Successfully', login2FA);
+    } catch (error) {
+      return Response(false, 'Fail to 2FA authentication', error.message);
     }
   }
 

@@ -85,17 +85,19 @@ export class AuthenticationService {
     };
   }
 
-  // Check if user enabled Two-Factor authentication or not
-  async check2FA(email: string): Promise<boolean> {
+  // Get User data using email
+  async getUserData(email: string) {
     try {
-      const user = await this.prisma.users.findUnique({
-        where: { email },
-        select: { is_2fa: true },
-      });
-
-      return user?.is_2fa ?? false; // If user is null, return false
+      const user = await this.prisma.users.findUnique({ where: { email } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      return user;
     } catch (error) {
-      throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException(
+        'Fail to get user data',
+        error.message,
+      );
     }
   }
 
@@ -137,6 +139,28 @@ export class AuthenticationService {
       accessToken,
       refreshToken,
     };
+  }
+
+  // Login with 2FA
+  async loginWith2FA(user: any) {
+    try {
+      const { accessToken, refreshToken } = await this.generateUserTokens(user);
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          profile_picture: user.profile_picture,
+        },
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Fail to login with 2FA',
+        error.message,
+      );
+    }
   }
 
   // Handle facebook login user validation or creation
