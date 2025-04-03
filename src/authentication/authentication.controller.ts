@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Req,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
@@ -25,7 +24,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Response } from 'src/utils/response.util';
-import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { GoogleOAuthGuard } from './guard/google-oauth.guard';
 import { TwitterAuthGuard } from './guard/twitter-oauth.guard';
@@ -37,11 +35,11 @@ export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
 
   // Handle the new user registration
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED) // Ensures it returns 201 Created
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User successfully registered' })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  @Post('register')
-  @HttpCode(HttpStatus.CREATED) // Ensures it returns 201 Created
   async register(@Body() registerDto: RegisterDTO) {
     try {
       const register = await this.authenticationService.register(registerDto);
@@ -52,13 +50,25 @@ export class AuthenticationController {
   }
 
   // Handle user login
+  @Post('login')
+  @HttpCode(HttpStatus.OK) // Returns 200 instead of default 201 for POST
   @ApiOperation({ summary: 'Authenticate user and generate an access token' })
   @ApiResponse({ status: 200, description: 'User successfully authenticated' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @HttpCode(HttpStatus.OK) // Returns 200 instead of default 201 for POST
-  @Post('login')
   async login(@Body() loginDto: LoginDTO) {
     try {
+      const is2FA = await this.authenticationService.check2FA(loginDto.email);
+
+      // If 2FA is enabled, require 2FA verification
+      if (is2FA) {
+        return {
+          status: true,
+          message: 'Two-factor authentication is required',
+          requiresTwoFactor: true,
+        };
+      }
+
+      // If 2FA not enabled, proceed with normal login
       const login = await this.authenticationService.login(loginDto);
       return Response(true, 'Login successful', login);
     } catch (error) {
@@ -66,26 +76,26 @@ export class AuthenticationController {
     }
   }
 
-  // handle facebook login
-  @Get('facebook')
-  @UseGuards(FacebookAuthGuard)
-  async facebookLogin(): Promise<any> {
-    // return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
-  }
+  // // handle facebook login
+  // @Get('facebook')
+  // @UseGuards(FacebookAuthGuard)
+  // async facebookLogin(): Promise<any> {
+  //   // return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
+  // }
 
-  // handle facebook redirect url
-  @Get('/facebook/redirect')
-  @UseGuards(FacebookAuthGuard)
-  async facebookLoginRedirect(@Req() req: Request): Promise<any> {
-    try {
-      const facebookLogin = await this.authenticationService.facebookAuth(
-        req.user,
-      );
-      return Response(true, 'Facebook login successful.', facebookLogin);
-    } catch (error) {
-      return Response(false, 'Failed to login with facebook.', error.message);
-    }
-  }
+  // // handle facebook redirect url
+  // @Get('/facebook/redirect')
+  // @UseGuards(FacebookAuthGuard)
+  // async facebookLoginRedirect(@Req() req: Request): Promise<any> {
+  //   try {
+  //     const facebookLogin = await this.authenticationService.facebookAuth(
+  //       req.user,
+  //     );
+  //     return Response(true, 'Facebook login successful.', facebookLogin);
+  //   } catch (error) {
+  //     return Response(false, 'Failed to login with facebook.', error.message);
+  //   }
+  // }
 
   // handle google login
   @Get('google')
@@ -104,27 +114,27 @@ export class AuthenticationController {
     }
   }
 
-  // handle twitter login
-  @Get('twitter')
-  @UseGuards(TwitterAuthGuard)
-  async twitterAuth() {}
+  // // handle twitter login
+  // @Get('twitter')
+  // @UseGuards(TwitterAuthGuard)
+  // async twitterAuth() {}
 
-  // handle twitter login callback
-  @Get('twitter/callback')
-  @UseGuards(TwitterAuthGuard)
-  async twitterAuthRedirect(@Req() req) {
-    console.log(req.user);
-  }
+  // // handle twitter login callback
+  // @Get('twitter/callback')
+  // @UseGuards(TwitterAuthGuard)
+  // async twitterAuthRedirect(@Req() req) {
+  //   console.log(req.user);
+  // }
 
   // handle the refresh token
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @ApiOperation({ summary: 'Refresh access token using a refresh token' })
   @ApiResponse({
     status: 200,
     description: 'New access token generated successfully',
   })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
-  @Post('refresh')
   async refreshTokens(@Body() refreshTokenDto: RefreshTokenDTO) {
     try {
       const refresh =
@@ -140,14 +150,14 @@ export class AuthenticationController {
   }
 
   // handle change password
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT) // 204 No Content (best practice for password change)
   @ApiOperation({ summary: 'Change user password' })
   @ApiBearerAuth() // Adds Bearer token authentication in Swagger
   @ApiResponse({ status: 204, description: 'Password changed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.NO_CONTENT) // 204 No Content (best practice for password change)
-  @Patch('change-password')
   async changePassword(
     @Req() req,
     @Body() changePasswordDto: ChangePasswordDTO,
@@ -164,6 +174,8 @@ export class AuthenticationController {
   }
 
   // handle forgot password
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @ApiOperation({
     summary: 'Send password reset instructions to the user email',
   })
@@ -173,8 +185,6 @@ export class AuthenticationController {
   })
   @ApiResponse({ status: 400, description: 'Invalid email format' })
   @ApiResponse({ status: 404, description: 'Email not found' })
-  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
-  @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDTO) {
     try {
       const forgotPassword =
@@ -186,12 +196,12 @@ export class AuthenticationController {
   }
 
   // handle reset password
+  @Patch('reset-password')
+  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
   @ApiOperation({ summary: 'Reset user password using a reset token' })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 401, description: 'Invalid or expired reset token' })
-  @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
-  @Patch('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDTO) {
     try {
       const resetPassword =
