@@ -76,26 +76,26 @@ export class AuthenticationController {
     }
   }
 
-  // handle facebook login
-  @Get('facebook')
-  @UseGuards(FacebookAuthGuard)
-  async facebookLogin(): Promise<any> {
-    // return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
-  }
+  // // handle facebook login
+  // @Get('facebook')
+  // @UseGuards(FacebookAuthGuard)
+  // async facebookLogin(): Promise<any> {
+  //   // return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
+  // }
 
-  // handle facebook redirect url
-  @Get('/facebook/redirect')
-  @UseGuards(FacebookAuthGuard)
-  async facebookLoginRedirect(@Req() req: Request): Promise<any> {
-    try {
-      const facebookLogin = await this.authenticationService.facebookAuth(
-        req.user,
-      );
-      return Response(true, 'Facebook login successful.', facebookLogin);
-    } catch (error) {
-      return Response(false, 'Failed to login with facebook.', error.message);
-    }
-  }
+  // // handle facebook redirect url
+  // @Get('/facebook/redirect')
+  // @UseGuards(FacebookAuthGuard)
+  // async facebookLoginRedirect(@Req() req: Request): Promise<any> {
+  //   try {
+  //     const facebookLogin = await this.authenticationService.facebookAuth(
+  //       req.user,
+  //     );
+  //     return Response(true, 'Facebook login successful.', facebookLogin);
+  //   } catch (error) {
+  //     return Response(false, 'Failed to login with facebook.', error.message);
+  //   }
+  // }
 
   // handle google login
   @Get('google')
@@ -114,17 +114,17 @@ export class AuthenticationController {
     }
   }
 
-  // handle twitter login
-  @Get('twitter')
-  @UseGuards(TwitterAuthGuard)
-  async twitterAuth() {}
+  // // handle twitter login
+  // @Get('twitter')
+  // @UseGuards(TwitterAuthGuard)
+  // async twitterAuth() {}
 
-  // handle twitter login callback
-  @Get('twitter/callback')
-  @UseGuards(TwitterAuthGuard)
-  async twitterAuthRedirect(@Req() req) {
-    console.log(req.user);
-  }
+  // // handle twitter login callback
+  // @Get('twitter/callback')
+  // @UseGuards(TwitterAuthGuard)
+  // async twitterAuthRedirect(@Req() req) {
+  //   console.log(req.user);
+  // }
 
   // handle the refresh token
   @Post('refresh')
