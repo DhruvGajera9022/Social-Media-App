@@ -462,4 +462,34 @@ export class ProfileController {
       return Response(false, 'Fail to search user.');
     }
   }
+
+  // 📌 Generate 2FA secret and QR code
+  @Post('2fa/generate')
+  @UseGuards(JwtAuthGuard)
+  async generateTwoFactorAuth(@Req() req) {
+    try {
+      const userId = +req.user.userId;
+      const user = await this.profileService.getUserData(userId);
+
+      const { otpAuthUrl, secret } =
+        await this.profileService.generateTwoFactorAuthenticationSecret(user);
+
+      // Generate QR code
+      const qrCode =
+        await this.profileService.generateQrCodeDataURL(otpAuthUrl);
+
+      return {
+        status: true,
+        message: 'QR code generated',
+        secret,
+        qrCode,
+      };
+    } catch (error) {
+      return Response(
+        false,
+        'Fail to enable two factor authentication.',
+        error.message,
+      );
+    }
+  }
 }

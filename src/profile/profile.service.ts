@@ -14,6 +14,9 @@ import {
   uploadToCloudinary,
 } from 'src/utils/cloudinary.util';
 import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import * as QRCode from 'qrcode';
+import { authenticator } from 'otplib';
 
 @Injectable()
 export class ProfileService {
@@ -894,5 +897,27 @@ export class ProfileService {
         error.message,
       );
     }
+  }
+
+  // Enable 2FA :
+  // Generate 2FA secret and QR code
+  async generateTwoFactorAuthenticationSecret(user: any) {
+    try {
+      const secret = authenticator.generateSecret();
+      const appName = 'Social Media';
+      const otpAuthUrl = authenticator.keyuri(user.email, appName, secret);
+
+      return { secret, otpAuthUrl };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Fail to generate 2FA secret code',
+        error.message,
+      );
+    }
+  }
+
+  // Generate QR code for authenticator app
+  async generateQrCodeDataURL(otpAuthUrl: string) {
+    return QRCode.toDataURL(otpAuthUrl);
   }
 }
