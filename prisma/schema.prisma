@@ -25,6 +25,7 @@ model Users {
   is_private             Boolean          @default(false)
   is_active              Boolean          @default(true)
   is_2fa                 Boolean          @default(false)
+  secret_2fa             String           @default("")
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
   refreshToken           RefreshToken[]
