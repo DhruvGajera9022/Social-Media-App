@@ -62,6 +62,7 @@ export class AuthenticationController {
       // If 2FA is enabled, require 2FA verification
       if (is2FA) {
         return {
+          status: true,
           message: 'Two-factor authentication is required',
           requiresTwoFactor: true,
         };

@@ -85,6 +85,7 @@ export class AuthenticationService {
     };
   }
 
+  // Check if user enabled Two-Factor authentication or not
   async check2FA(email: string): Promise<boolean> {
     try {
       const user = await this.prisma.users.findUnique({
