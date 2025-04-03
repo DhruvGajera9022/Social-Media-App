@@ -16,6 +16,9 @@ async function bootstrap() {
   // Using validation pipe for input validation
   app.useGlobalPipes(new ValidationPipe());
 
+  // Enable CORS
+  app.enableCors();
+
   // config for api documentation
   const config = new DocumentBuilder()
     .setTitle('Social Media App')
