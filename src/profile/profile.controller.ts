@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -7,6 +8,7 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -25,6 +27,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Response } from 'src/utils/response.util';
+import { TwoFactorAuthDTO } from './dto/two-factor-auth.dto';
 
 @ApiTags('Profile') // Tags for api documentation
 @ApiBearerAuth() // Requires authentication in Swagger
@@ -490,6 +493,48 @@ export class ProfileController {
         'Fail to enable two factor authentication.',
         error.message,
       );
+    }
+  }
+
+  // 📌 Turn on 2FA for user
+  @Post('2fa/turn-on')
+  @UseGuards(JwtAuthGuard)
+  async turnOnTwoFactorAuth(
+    @Req() req,
+    @Body() twoFactorAuthDto: TwoFactorAuthDTO,
+  ) {
+    try {
+      // Get user data from JWT token
+      const userId = +req.user.userId;
+      const user = await this.profileService.getUserData(userId);
+
+      // Check if 2FA is enabled or not
+      if (!user.is_2fa) {
+        throw new BadRequestException(
+          'Two-factor authentication is not set up yet. Generate a secret first.',
+        );
+      }
+
+      // Verify the code and secret
+      const isCodeValid =
+        await this.profileService.verifyTwoFactorAuthenticationCode(
+          twoFactorAuthDto.code,
+          user,
+        );
+
+      // Check it code is valid or not
+      if (!isCodeValid) {
+        throw new UnauthorizedException('Invalid authentication code');
+      }
+
+      // Enable the 2FA
+      await this.profileService.enableTwoFactorAuth(user);
+
+      return {
+        message: 'Two-factor authentication has been enabled',
+      };
+    } catch (error) {
+      return Response(false, 'Fail to turn on 2FA', error.message);
     }
   }
 }

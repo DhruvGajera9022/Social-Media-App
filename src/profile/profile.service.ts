@@ -42,6 +42,7 @@ export class ProfileService {
           is_private: true,
           profile_picture: true,
           is_active: true,
+          is_2fa: true,
         },
       });
       if (!user) {
@@ -907,6 +908,12 @@ export class ProfileService {
       const appName = 'Social Media';
       const otpAuthUrl = authenticator.keyuri(user.email, appName, secret);
 
+      // Store secret in database
+      await this.prisma.users.update({
+        where: { id: user.id },
+        data: { secret_2fa: secret },
+      });
+
       return { secret, otpAuthUrl };
     } catch (error) {
       throw new InternalServerErrorException(
@@ -919,5 +926,35 @@ export class ProfileService {
   // Generate QR code for authenticator app
   async generateQrCodeDataURL(otpAuthUrl: string) {
     return QRCode.toDataURL(otpAuthUrl);
+  }
+
+  // Verify 2FA code
+  async verifyTwoFactorAuthenticationCode(code: string, user: any) {
+    try {
+      return authenticator.verify({
+        token: code,
+        secret: user.secret_2fa,
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Fail to get 2fa secret',
+        error.message,
+      );
+    }
+  }
+
+  // Enable 2FA
+  async enableTwoFactorAuth(user: any) {
+    try {
+      await this.prisma.users.update({
+        where: { id: user.id },
+        data: { is_2fa: true },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Fail to enable 2FA',
+        error.message,
+      );
+    }
   }
 }
