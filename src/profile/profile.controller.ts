@@ -561,7 +561,9 @@ export class ProfileController {
   @Post('2fa/authenticate')
   async authenticate2FA(@Body() twoFALoginDto: TwoFactorAuthLoginDTO) {
     try {
-      const user = await this.profileService.getUserDataEmail(twoFALoginDto.id);
+      const user = await this.profileService.getUserDataEmail(
+        twoFALoginDto.email,
+      );
 
       if (!user.secret_2fa) {
         throw new BadRequestException(
