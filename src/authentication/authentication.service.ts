@@ -28,6 +28,20 @@ export class AuthenticationService {
 
   saltRounds = process.env.SALT_ROUNDS ? +process.env.SALT_ROUNDS : 10;
 
+  // Generate tokens
+  async generateUserTokens(user) {
+    const payload = { sub: user.id, role: user.role.name };
+
+    // generate jwt token
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const refreshToken = uuIdv4();
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
   // Handle the new user registration
   async register(registerDto: RegisterDTO) {
     const { firstName, lastName, email, password, roleId } = registerDto;
@@ -68,18 +82,12 @@ export class AuthenticationService {
       },
     });
 
-    return newUser;
-  }
-
-  // Generate tokens
-  async generateUserTokens(user) {
-    const payload = { sub: user.id, role: user.role.name };
-
-    // generate jwt token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
-    const refreshToken = uuIdv4();
+    // Generate tokens
+    const { accessToken, refreshToken } =
+      await this.generateUserTokens(newUser);
 
     return {
+      newUser,
       accessToken,
       refreshToken,
     };
