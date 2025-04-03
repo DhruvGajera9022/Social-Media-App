@@ -64,37 +64,6 @@ export class ProfileService {
     }
   }
 
-  // Get User By Id
-  async getUserDataEmail(email: string) {
-    try {
-      // Find user
-      const user = await this.prisma.users.findUnique({
-        where: { email: email },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          is_private: true,
-          profile_picture: true,
-          is_active: true,
-          is_2fa: true,
-          secret_2fa: true,
-        },
-      });
-      if (!user) {
-        throw new NotFoundException(`User  not found`);
-      }
-
-      return user;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to retrieve user data',
-        error.message,
-      );
-    }
-  }
-
   // Get Profile with posts and follower counts
   async getProfile(userId: number) {
     try {
