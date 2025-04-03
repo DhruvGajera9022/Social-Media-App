@@ -4,6 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EditProfileDTO } from './dto/edit-profile.dto';
@@ -43,6 +44,7 @@ export class ProfileService {
           profile_picture: true,
           is_active: true,
           is_2fa: true,
+          secret_2fa: true,
         },
       });
       if (!user) {
@@ -51,6 +53,37 @@ export class ProfileService {
 
       if (!user.is_active) {
         throw new BadRequestException('This account has been deactivated');
+      }
+
+      return user;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve user data',
+        error.message,
+      );
+    }
+  }
+
+  // Get User By Id
+  async getUserDataEmail(email: string) {
+    try {
+      // Find user
+      const user = await this.prisma.users.findUnique({
+        where: { email: email },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          is_private: true,
+          profile_picture: true,
+          is_active: true,
+          is_2fa: true,
+          secret_2fa: true,
+        },
+      });
+      if (!user) {
+        throw new NotFoundException(`User  not found`);
       }
 
       return user;
@@ -911,7 +944,10 @@ export class ProfileService {
       // Store secret in database
       await this.prisma.users.update({
         where: { id: user.id },
-        data: { secret_2fa: secret },
+        data: {
+          secret_2fa: secret,
+          is_2fa: false,
+        },
       });
 
       return { secret, otpAuthUrl };
@@ -925,16 +961,33 @@ export class ProfileService {
 
   // Generate QR code for authenticator app
   async generateQrCodeDataURL(otpAuthUrl: string) {
-    return QRCode.toDataURL(otpAuthUrl);
+    try {
+      return await QRCode.toDataURL(otpAuthUrl);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to generate QR code',
+        error.message,
+      );
+    }
   }
 
   // Verify 2FA code
   async verifyTwoFactorAuthenticationCode(code: string, user: any) {
     try {
-      return authenticator.verify({
+      if (!user.secret_2fa) {
+        throw new BadRequestException('No 2FA secret found for this user');
+      }
+
+      const isValid = authenticator.verify({
         token: code,
         secret: user.secret_2fa,
       });
+
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid 2FA code');
+      }
+
+      return true;
     } catch (error) {
       throw new InternalServerErrorException(
         'Fail to get 2fa secret',
@@ -946,6 +999,10 @@ export class ProfileService {
   // Enable 2FA
   async enableTwoFactorAuth(user: any) {
     try {
+      if (!user.secret_2fa) {
+        throw new BadRequestException('Cannot enable 2FA without a secret');
+      }
+
       await this.prisma.users.update({
         where: { id: user.id },
         data: { is_2fa: true },
@@ -953,6 +1010,25 @@ export class ProfileService {
     } catch (error) {
       throw new InternalServerErrorException(
         'Fail to enable 2FA',
+        error.message,
+      );
+    }
+  }
+
+  // Login with 2FA
+  async loginWith2FA(user: any) {
+    try {
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          profile_picture: user.profile_picture,
+        },
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Fail to login with 2FA',
         error.message,
       );
     }

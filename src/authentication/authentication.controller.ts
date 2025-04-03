@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  InternalServerErrorException,
   Patch,
   Post,
   Req,
@@ -64,18 +65,6 @@ export class AuthenticationController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDTO) {
     try {
-      const is2FA = await this.authenticationService.check2FA(loginDto.email);
-
-      // If 2FA is enabled, require 2FA verification
-      if (is2FA) {
-        return {
-          status: true,
-          message: 'Two-factor authentication is required',
-          requiresTwoFactor: true,
-        };
-      }
-
-      // If 2FA not enabled, proceed with normal login
       const login = await this.authenticationService.login(loginDto);
       return Response(true, 'Login successful', login);
     } catch (error) {
@@ -91,7 +80,7 @@ export class AuthenticationController {
         twoFALoginDto.email,
       );
 
-      if (!user.is_2fa) {
+      if (!user.secret_2fa) {
         throw new BadRequestException(
           'Two-factor authentication is not set up for this user',
         );
