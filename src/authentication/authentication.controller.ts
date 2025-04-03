@@ -76,9 +76,7 @@ export class AuthenticationController {
   @Post('2fa/authenticate')
   async authenticate2FA(@Body() twoFALoginDto: TwoFactorAuthLoginDTO) {
     try {
-      const user = await this.authenticationService.getUserData(
-        twoFALoginDto.email,
-      );
+      const user = await this.profileService.getUserData(+twoFALoginDto.id);
 
       if (!user.secret_2fa) {
         throw new BadRequestException(

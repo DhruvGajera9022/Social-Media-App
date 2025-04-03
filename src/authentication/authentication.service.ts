@@ -93,22 +93,6 @@ export class AuthenticationService {
     };
   }
 
-  // Get User data using email
-  async getUserData(email: string) {
-    try {
-      const user = await this.prisma.users.findUnique({ where: { email } });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-      return user;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Fail to get user data',
-        error.message,
-      );
-    }
-  }
-
   // Handle the user login
   async login(loginDto: LoginDTO) {
     const { email, password } = loginDto;
