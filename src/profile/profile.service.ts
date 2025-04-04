@@ -78,6 +78,7 @@ export class ProfileService {
               title: true,
               content: true,
               created_at: true,
+              media_url: true,
               pinned: true,
             },
           },
