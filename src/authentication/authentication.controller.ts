@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Req,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -27,7 +28,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Response } from 'src/utils/response.util';
-import { Request } from 'express';
+import { Request, Response as ResponseExpress } from 'express';
 import { GoogleOAuthGuard } from './guard/google-oauth.guard';
 import { TwitterAuthGuard } from './guard/twitter-oauth.guard';
 import { FacebookAuthGuard } from './guard/facebook-oauth.guard';
@@ -131,10 +132,13 @@ export class AuthenticationController {
   // handle google login callback
   @Get('google/callback')
   @UseGuards(GoogleOAuthGuard)
-  async googleAuthRedirect(@Req() req) {
+  async googleAuthRedirect(@Req() req, @Res() res: ResponseExpress) {
     try {
       const googleLogin = await this.authenticationService.googleAuth(req.user);
-      return Response(true, 'Google login successful.', googleLogin);
+      // Redirect to frontend with tokens as query params
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/auth/callback?token=${googleLogin.accessToken}`,
+      );
     } catch (error) {
       return Response(false, 'Failed to login with google.', error.message);
     }
