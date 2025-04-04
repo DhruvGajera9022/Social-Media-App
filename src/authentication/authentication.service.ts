@@ -187,7 +187,10 @@ export class AuthenticationService {
       omit: { password: true },
     });
 
-    return newUser;
+    const { accessToken, refreshToken } =
+      await this.generateUserTokens(newUser);
+
+    return { newUser, accessToken, refreshToken };
   }
 
   // Handle the refresh tokens
