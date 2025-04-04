@@ -33,7 +33,7 @@ export class AuthenticationService {
     const payload = { sub: user.id, role: user.role.name };
 
     // generate jwt token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '5h' });
     const refreshToken = uuIdv4();
 
     return {

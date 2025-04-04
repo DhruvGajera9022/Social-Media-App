@@ -29,6 +29,15 @@ export class PostService {
       orderBy: {
         created_at: 'desc',
       },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            profile_picture: true,
+          },
+        },
+      },
     });
   }
 
