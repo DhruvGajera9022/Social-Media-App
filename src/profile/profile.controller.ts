@@ -172,8 +172,8 @@ export class ProfileController {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.acceptFollowRequest(
-        userId,
         +requesterId,
+        userId,
       );
       return { status: true, message };
     } catch (error) {
