@@ -29,7 +29,7 @@ export class AuthenticationService {
   saltRounds = process.env.SALT_ROUNDS ? +process.env.SALT_ROUNDS : 10;
 
   // Generate tokens
-  async generateUserTokens(user) {
+  async generateUserTokens(user: any) {
     const payload = { sub: user.id, role: user.role.name };
 
     // generate jwt token
@@ -185,6 +185,7 @@ export class AuthenticationService {
         profile_picture: picture,
       },
       omit: { password: true },
+      include: { role: true },
     });
 
     const { accessToken, refreshToken } =

@@ -124,23 +124,27 @@ export class AuthenticationController {
   //   }
   // }
 
-  // handle google login
+  // Start Google Login — only triggers Passport redirect
   @Get('google')
   @UseGuards(GoogleOAuthGuard)
-  async googleLogin() {}
+  async googleLogin() {
+    // This will redirect to Google's OAuth consent screen
+  }
 
-  // handle google login callback
+  // Callback after Google login — process tokens and redirect
   @Get('google/callback')
   @UseGuards(GoogleOAuthGuard)
   async googleAuthRedirect(@Req() req, @Res() res: ResponseExpress) {
     try {
       const googleLogin = await this.authenticationService.googleAuth(req.user);
-      // Redirect to frontend with tokens as query params
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/auth/callback?token=${googleLogin.accessToken}`,
-      );
+
+      // Redirect to frontend with URL-encoded tokens
+      const successUrl = `${process.env.FRONTEND_URL}/google-success?accessToken=${encodeURIComponent(googleLogin.accessToken)}&refreshToken=${encodeURIComponent(googleLogin.refreshToken)}`;
+      return res.redirect(successUrl);
     } catch (error) {
-      return Response(false, 'Failed to login with google.', error.message);
+      // On failure, redirect back to login with error
+      console.log(error);
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=google`);
     }
   }
 
