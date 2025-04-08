@@ -1,9 +1,37 @@
-import { NestFactory } from '@nestjs/core';
+import { NestContainer, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import 'colors';
+import { SpelunkerModule } from 'nestjs-spelunker';
+import * as fs from 'fs';
+
+// Get global modules
+const getGlobalModule = (app: INestApplication) => {
+  const modules = ((app as any).container as NestContainer).getModules();
+  const modulesArray = Array.from(modules.values());
+  const globalModules = modulesArray
+    .filter((module) => module.isGlobal)
+    .map((module) => module.metatype.name);
+
+  return globalModules;
+};
+
+// For generate graph visualization
+const generateAppGraph = (app: INestApplication) => {
+  const globalModules = getGlobalModule(app);
+  const tree = SpelunkerModule.explore(app);
+  const root = SpelunkerModule.graph(tree);
+  const edges = SpelunkerModule.findGraphEdges(root);
+
+  let graph = 'graph LR\n';
+  edges.forEach(({ from, to }) => {
+    graph += `  ${from.module.name}-->${to.module.name}\n`;
+  });
+
+  return graph;
+};
 
 async function bootstrap() {
   // Initialize the app
@@ -38,6 +66,13 @@ async function bootstrap() {
       persistAuthorization: true, // Keeps the token saved
     },
   });
+
+  // Using for debugging
+  // logger.log(SpelunkerModule.explore(app));
+
+  // Generate graph
+  const graph = generateAppGraph(app);
+  fs.writeFileSync('./visualizations/app.modules.mmd', graph);
 
   // Start the server
   // Changes
