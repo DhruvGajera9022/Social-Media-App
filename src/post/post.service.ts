@@ -32,8 +32,7 @@ export class PostService {
       include: {
         user: {
           select: {
-            firstName: true,
-            lastName: true,
+            username: true,
             profile_picture: true,
           },
         },
