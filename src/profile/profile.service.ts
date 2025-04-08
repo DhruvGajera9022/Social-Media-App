@@ -37,8 +37,7 @@ export class ProfileService {
         where: { id: userId },
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          username: true,
           email: true,
           is_private: true,
           profile_picture: true,
@@ -102,15 +101,14 @@ export class ProfileService {
     try {
       await this.getUserData(userId); // Verify user exists and is active
 
-      const { firstName, lastName, email, is_private } = editProfileDto;
+      const { username, email, is_private } = editProfileDto;
 
       return await this.prisma.users.update({
         where: { id: userId },
-        data: { firstName, lastName, email, is_private: Boolean(is_private) },
+        data: { username, email, is_private: Boolean(is_private) },
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          username: true,
           email: true,
           is_private: true,
         },
@@ -378,8 +376,7 @@ export class ProfileService {
           follower: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              username: true,
               profile_picture: true,
             },
           },
@@ -389,8 +386,7 @@ export class ProfileService {
       // Transform the response for better API consumption
       const formattedFollowers = followers.map((f) => ({
         id: f.follower.id,
-        firstName: f.follower.firstName,
-        lastName: f.follower.lastName,
+        username: f.follower.username,
         profile_picture: f.follower.profile_picture,
       }));
 
@@ -422,8 +418,7 @@ export class ProfileService {
           following: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              username: true,
               profile_picture: true,
             },
           },
@@ -433,8 +428,7 @@ export class ProfileService {
       // Transform the response for better API consumption
       const formattedFollowing = following.map((f) => ({
         id: f.following.id,
-        firstName: f.following.firstName,
-        lastName: f.following.lastName,
+        username: f.following.username,
         profile_picture: f.following.profile_picture,
       }));
 
@@ -466,8 +460,7 @@ export class ProfileService {
           requester: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              username: true,
               profile_picture: true,
             },
           },
@@ -479,8 +472,7 @@ export class ProfileService {
         requestId: r.id,
         user: {
           id: r.requester.id,
-          firstName: r.requester.firstName,
-          lastName: r.requester.lastName,
+          username: r.requester.username,
           profile_picture: r.requester.profile_picture,
         },
       }));
@@ -606,8 +598,7 @@ export class ProfileService {
           blocked: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              username: true,
               profile_picture: true,
             },
           },
@@ -617,8 +608,7 @@ export class ProfileService {
       // Transform the response for better API consumption
       const formattedBlockedUsers = blockedUsers.map((b) => ({
         id: b.blocked.id,
-        firstName: b.blocked.firstName,
-        lastName: b.blocked.lastName,
+        username: b.blocked.username,
         profile_picture: b.blocked.profile_picture,
       }));
 
@@ -663,8 +653,7 @@ export class ProfileService {
         where: { id: { in: mutualFollowerIds } },
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          username: true,
           profile_picture: true,
         },
       });
@@ -757,8 +746,7 @@ export class ProfileService {
           AND: [
             {
               OR: [
-                { firstName: { contains: trimmedQuery, mode: 'insensitive' } },
-                { lastName: { contains: trimmedQuery, mode: 'insensitive' } },
+                { username: { contains: trimmedQuery, mode: 'insensitive' } },
               ],
             },
             { id: { notIn: [...blockedIds, userId] } }, // Exclude blocked users
@@ -775,8 +763,7 @@ export class ProfileService {
         },
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          username: true,
           profile_picture: true,
           is_private: true,
           _count: { select: { followers: true, following: true } },
@@ -789,8 +776,7 @@ export class ProfileService {
           AND: [
             {
               OR: [
-                { firstName: { contains: trimmedQuery, mode: 'insensitive' } },
-                { lastName: { contains: trimmedQuery, mode: 'insensitive' } },
+                { username: { contains: trimmedQuery, mode: 'insensitive' } },
               ],
             },
             { id: { notIn: [...blockedIds, userId] } },
@@ -816,9 +802,8 @@ export class ProfileService {
             {
               OR: [
                 {
-                  firstName: { contains: trimmedQuery, mode: 'insensitive' },
+                  username: { contains: trimmedQuery, mode: 'insensitive' },
                 },
-                { lastName: { contains: trimmedQuery, mode: 'insensitive' } },
               ],
             },
             {
@@ -835,8 +820,7 @@ export class ProfileService {
         },
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          username: true,
           profile_picture: true,
           is_private: true,
           _count: { select: { followers: true, following: true } },
@@ -850,9 +834,8 @@ export class ProfileService {
             {
               OR: [
                 {
-                  firstName: { contains: trimmedQuery, mode: 'insensitive' },
+                  username: { contains: trimmedQuery, mode: 'insensitive' },
                 },
-                { lastName: { contains: trimmedQuery, mode: 'insensitive' } },
               ],
             },
             {
