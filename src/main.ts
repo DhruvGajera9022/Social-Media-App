@@ -75,6 +75,7 @@ async function bootstrap() {
   fs.writeFileSync('./visualizations/app.modules.mmd', graph);
 
   // Start the server
+  // Changes
   await app.listen(process.env.PORT ?? 3000);
 
   logger.log(
