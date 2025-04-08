@@ -44,7 +44,7 @@ export class AuthenticationService {
 
   // Handle the new user registration
   async register(registerDto: RegisterDTO) {
-    const { firstName, lastName, email, password, roleId } = registerDto;
+    const { username, email, password, roleId } = registerDto;
 
     // check if user exists
     const existingUser = await this.prisma.users.findUnique({
@@ -67,8 +67,7 @@ export class AuthenticationService {
     // create new user
     const newUser = await this.prisma.users.create({
       data: {
-        firstName,
-        lastName,
+        username,
         email,
         password: hashedPassword,
         roleId: userRole.id,
@@ -158,14 +157,11 @@ export class AuthenticationService {
   // Handle facebook login user validation or creation
   async facebookAuth(userData: any) {
     const { email, firstName, lastName } = userData;
-    console.log({ email, firstName, lastName });
   }
 
   // Handle google login user validation or creation
   async googleAuth(userData: any) {
     const { email, name, picture } = userData;
-
-    const [firstName, lastName] = name.split(' ');
 
     // Check if user exists in the database
     const user = await this.prisma.users.findUnique({
@@ -178,8 +174,7 @@ export class AuthenticationService {
 
     const newUser = await this.prisma.users.create({
       data: {
-        firstName,
-        lastName,
+        username: name,
         email,
         password: '',
         profile_picture: picture,
