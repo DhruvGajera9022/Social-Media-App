@@ -3,22 +3,13 @@ import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class UpdateUserDTO {
   @ApiProperty({
-    description: 'User first name',
-    example: 'John',
+    description: 'Username',
+    example: 'John123',
     required: false,
   })
   @IsOptional()
-  @IsString({ message: 'First name must be a string' })
-  firstName: string;
-
-  @ApiProperty({
-    description: 'User last name',
-    example: 'Doe',
-    required: false,
-  })
-  @IsOptional()
-  @IsString({ message: 'Last name must be a string' })
-  lastName: string;
+  @IsString({ message: 'Username must be a string' })
+  username: string;
 
   @ApiProperty({
     description: 'User email address',

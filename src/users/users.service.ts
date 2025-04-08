@@ -26,13 +26,13 @@ export class UsersService {
   }
 
   // Search user
-  async searchUser(firstName: string, page: number, limit: number) {
+  async searchUser(username: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
 
     const users = await this.prisma.users.findMany({
       where: {
-        firstName: {
-          contains: firstName,
+        username: {
+          contains: username,
           mode: 'insensitive',
         },
       },
@@ -43,8 +43,8 @@ export class UsersService {
 
     const totalUsers = await this.prisma.users.count({
       where: {
-        firstName: {
-          contains: firstName,
+        username: {
+          contains: username,
           mode: 'insensitive',
         },
       },
@@ -61,7 +61,7 @@ export class UsersService {
 
   // Update user
   async updateUser(userId: number, updateUserDto: UpdateUserDTO) {
-    const { firstName, lastName, email, roleId } = updateUserDto;
+    const { username, email, roleId } = updateUserDto;
 
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
@@ -75,8 +75,7 @@ export class UsersService {
         id: userId,
       },
       data: {
-        firstName,
-        lastName,
+        username,
         email,
         roleId,
       },
