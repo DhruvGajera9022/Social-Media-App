@@ -3,6 +3,24 @@ import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class EditProfileDTO {
   @ApiPropertyOptional({
+    description: 'First Name of the user',
+    example: 'John',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'First Name must be a string' })
+  firstName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Last Name of the user',
+    example: 'Doe',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Last Name must be a string' })
+  lastName?: string;
+
+  @ApiPropertyOptional({
     description: 'Username of the user',
     example: 'John123',
     required: false,

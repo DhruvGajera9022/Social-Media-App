@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Req,
   Res,
   UnauthorizedException,
@@ -52,7 +53,7 @@ export class ProfileController {
   }
 
   // Edit Profile
-  @Patch()
+  @Put()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Edit user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
@@ -71,7 +72,7 @@ export class ProfileController {
   }
 
   // 📌 Update Profile Picture Separately
-  @Patch('profile-picture')
+  @Put('profile-picture')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Edit user profile-picture' })
   @ApiResponse({

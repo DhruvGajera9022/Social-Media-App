@@ -101,14 +101,23 @@ export class ProfileService {
     try {
       await this.getUserData(userId); // Verify user exists and is active
 
-      const { username, email, is_private } = editProfileDto;
+      const { username, firstName, lastName, email, is_private } =
+        editProfileDto;
 
       return await this.prisma.users.update({
         where: { id: userId },
-        data: { username, email, is_private: Boolean(is_private) },
+        data: {
+          username,
+          firstName,
+          lastName,
+          email,
+          is_private: Boolean(is_private),
+        },
         select: {
           id: true,
           username: true,
+          firstName: true,
+          lastName: true,
           email: true,
           is_private: true,
         },
@@ -764,6 +773,8 @@ export class ProfileService {
         select: {
           id: true,
           username: true,
+          firstName: true,
+          lastName: true,
           profile_picture: true,
           is_private: true,
           _count: { select: { followers: true, following: true } },
@@ -821,6 +832,8 @@ export class ProfileService {
         select: {
           id: true,
           username: true,
+          firstName: true,
+          lastName: true,
           profile_picture: true,
           is_private: true,
           _count: { select: { followers: true, following: true } },
