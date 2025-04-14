@@ -26,10 +26,16 @@ export class PostService {
   // Get Posts
   async getPosts() {
     return this.prisma.posts.findMany({
+      take: 10,
       orderBy: {
         created_at: 'desc',
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        media_url: true,
+        created_at: true,
         user: {
           select: {
             username: true,
