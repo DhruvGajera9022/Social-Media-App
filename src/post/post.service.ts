@@ -457,4 +457,96 @@ export class PostService {
       throw new InternalServerErrorException('Failed to fetch comments');
     }
   }
+
+  async toggleBookmark(postId: number, userId: number) {
+    try {
+      // Verify post exists
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
+      });
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      // Check if bookmark already exists
+      const existingBookmark = await this.prisma.bookmarks.findFirst({
+        where: {
+          postId,
+          userId,
+        },
+      });
+
+      if (existingBookmark) {
+        // Remove bookmark
+        await this.prisma.bookmarks.delete({
+          where: { id: existingBookmark.id },
+        });
+        return {
+          message: 'Post removed from bookmarks',
+          bookmarked: false,
+        };
+      } else {
+        // Add bookmark
+        await this.prisma.bookmarks.create({
+          data: {
+            postId,
+            userId,
+          },
+        });
+        return {
+          message: 'Post added to bookmarks',
+          bookmarked: true,
+        };
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  async getBookmarks(userId: number) {
+    try {
+      // Verify user exists
+      const user = await this.prisma.users.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      return this.prisma.bookmarks.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          created_at: true,
+          post: {
+            select: {
+              id: true,
+              title: true,
+              content: true,
+              media_url: true,
+              likes_count: true,
+              views_count: true,
+              created_at: true,
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  profile_picture: true,
+                },
+              },
+              _count: {
+                select: {
+                  Comments: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
 }

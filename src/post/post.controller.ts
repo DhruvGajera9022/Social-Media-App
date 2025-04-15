@@ -53,6 +53,59 @@ export class PostController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all bookmarked posts for authenticated user' })
+  @ApiResponse({ status: 200, description: 'Bookmarks fetched successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 500, description: 'Server error' })
+  @ApiBearerAuth()
+  @Get('bookmarks')
+  async getBookmarks(@Req() req: Request & { user: { userId: number } }) {
+    try {
+      const userId = req.user.userId;
+      const bookmarks = await this.postService.getBookmarks(userId);
+      return Response(true, 'Bookmarked posts fetched successfully', bookmarks);
+    } catch (error) {
+      return Response(false, 'Failed to fetch bookmarks', error.message);
+    }
+  }
+
+  @ApiOperation({ summary: 'Get all comments for a post' })
+  @ApiParam({ name: 'id', required: true, description: 'Post ID' })
+  @ApiResponse({ status: 200, description: 'Comments retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiResponse({ status: 500, description: 'Server error' })
+  @Get(':id/comment')
+  async getComments(@Param('id', ParseIntPipe) id: number) {
+    try {
+      const comments = await this.postService.getComments(id);
+      return Response(true, 'Comments retrieved successfully', comments);
+    } catch (error) {
+      return Response(false, 'Failed to retrieve comments', error.message);
+    }
+  }
+
+  @ApiOperation({ summary: 'Get a post by ID' })
+  @ApiParam({ name: 'id', required: true, description: 'Post ID' })
+  @ApiResponse({ status: 200, description: 'Post retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiResponse({ status: 500, description: 'Server error' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  async getPostById(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: { userId: number } },
+  ) {
+    try {
+      const userId = req.user.userId;
+      const post = await this.postService.getPostById(id, userId);
+      return Response(true, 'Post retrieved successfully', post);
+    } catch (error) {
+      return Response(false, 'Failed to fetch post', error.message);
+    }
+  }
+
   @ApiOperation({ summary: 'Create new post' })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 201, description: 'Post created successfully' })
@@ -96,27 +149,6 @@ export class PostController {
       return Response(true, 'Post created successfully', newPost);
     } catch (error) {
       return Response(false, 'Failed to create post', error.message);
-    }
-  }
-
-  @ApiOperation({ summary: 'Get a post by ID' })
-  @ApiParam({ name: 'id', required: true, description: 'Post ID' })
-  @ApiResponse({ status: 200, description: 'Post retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'Post not found' })
-  @ApiResponse({ status: 500, description: 'Server error' })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  async getPostById(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request & { user: { userId: number } },
-  ) {
-    try {
-      const userId = req.user.userId;
-      const post = await this.postService.getPostById(id, userId);
-      return Response(true, 'Post retrieved successfully', post);
-    } catch (error) {
-      return Response(false, 'Failed to fetch post', error.message);
     }
   }
 
@@ -246,18 +278,23 @@ export class PostController {
     }
   }
 
-  @ApiOperation({ summary: 'Get all comments for a post' })
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Bookmark or unbookmark a post' })
   @ApiParam({ name: 'id', required: true, description: 'Post ID' })
-  @ApiResponse({ status: 200, description: 'Comments retrieved successfully' })
+  @ApiResponse({ status: 200, description: 'Bookmark toggled successfully' })
   @ApiResponse({ status: 404, description: 'Post not found' })
-  @ApiResponse({ status: 500, description: 'Server error' })
-  @Get(':id/comment')
-  async getComments(@Param('id', ParseIntPipe) id: number) {
+  @ApiBearerAuth()
+  @Patch(':id/bookmark')
+  async toggleBookmark(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: { userId: number } },
+  ) {
     try {
-      const comments = await this.postService.getComments(id);
-      return Response(true, 'Comments retrieved successfully', comments);
+      const userId = req.user.userId;
+      const result = await this.postService.toggleBookmark(id, userId);
+      return Response(true, result.message, { bookmarked: result.bookmarked });
     } catch (error) {
-      return Response(false, 'Failed to retrieve comments', error.message);
+      return Response(false, 'Failed bookmark post', error.message);
     }
   }
 }
