@@ -96,6 +96,39 @@ export class ProfileService {
     }
   }
 
+  // Get profile by id
+  async getProfileById(userId: number) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: { id: userId, is_active: true },
+        include: {
+          _count: { select: { followers: true, following: true } },
+          posts: {
+            orderBy: [{ pinned: 'desc' }, { created_at: 'desc' }],
+            select: {
+              id: true,
+              title: true,
+              content: true,
+              created_at: true,
+              media_url: true,
+              pinned: true,
+            },
+          },
+        },
+        omit: { password: true },
+      });
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+      return user;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve profile data',
+        error.message,
+      );
+    }
+  }
+
   // Edit Profile
   async editProfile(userId: number, editProfileDto: EditProfileDTO) {
     try {

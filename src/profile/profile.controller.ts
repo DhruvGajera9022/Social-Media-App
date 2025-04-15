@@ -52,6 +52,20 @@ export class ProfileController {
     }
   }
 
+  // Get user profile by ID
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user profile by id' })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getProfileById(@Param('id') id: string) {
+    try {
+      const profile = await this.profileService.getProfileById(+id);
+      return Response(true, 'Profile fetched successfully', profile);
+    } catch (error) {
+      return Response(false, 'Failed to fetch profile data.', error.message);
+    }
+  }
+
   // Edit Profile
   @Put()
   @UseGuards(JwtAuthGuard)
