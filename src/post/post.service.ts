@@ -16,7 +16,11 @@ import { CommentPostDTO } from './dto/comment-post.dto';
 
 @Injectable()
 export class PostService {
-  constructor(private prisma: PrismaService) {
+  constructor(private readonly prisma: PrismaService) {
+    this.configureCloudinary();
+  }
+
+  private configureCloudinary(): void {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
@@ -24,122 +28,194 @@ export class PostService {
     });
   }
 
-  // Get Posts
   async getPosts() {
-    return this.prisma.posts.findMany({
-      take: 10,
-      orderBy: {
-        created_at: 'desc',
-      },
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        media_url: true,
-        created_at: true,
-        user: {
-          select: {
-            username: true,
-            profile_picture: true,
+    try {
+      return await this.prisma.posts.findMany({
+        take: 10,
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          media_url: true,
+          created_at: true,
+          pinned: true,
+          likes_count: true,
+          views_count: true,
+          status: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              profile_picture: true,
+            },
+          },
+          Comments: {
+            select: {
+              id: true,
+              userId: true,
+              content: true,
+              created_at: true,
+              user: {
+                select: {
+                  username: true,
+                  profile_picture: true,
+                },
+              },
+            },
+            take: 3, // Limit initial comments load
+            orderBy: { created_at: 'desc' },
+          },
+          _count: {
+            select: {
+              Comments: true,
+            },
           },
         },
-        Comments: {
-          select: {
-            userId: true,
-            content: true,
-          },
-        },
-      },
-    });
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to fetch posts');
+    }
   }
 
-  // Get Single Post
-  async singlePost(postId: number) {
+  async getPostById(postId: number, userId: number) {
     try {
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              profile_picture: true,
+            },
+          },
+          Comments: {
+            select: {
+              id: true,
+              content: true,
+              created_at: true,
+              userId: true,
+              user: {
+                select: {
+                  username: true,
+                  profile_picture: true,
+                },
+              },
+            },
+            orderBy: { created_at: 'desc' },
+            take: 10,
+          },
+          _count: {
+            select: {
+              Comments: true,
+            },
+          },
+        },
       });
+
       if (!post) {
         throw new NotFoundException('Post not found');
       }
-      return post;
-    } catch (error) {
-      throw new InternalServerErrorException(error);
-    }
-  }
 
-  // Get Post By Id
-  async getPostById(postId: number, userId: number) {
-    try {
-      const post = await this.singlePost(postId);
-
-      // Check if post.userId !== userId then update view_count
-      if (post.userId !== userId && post.status !== PostEnum.DRAFT) {
-        await this.prisma.posts.update({
-          where: { id: postId },
-          data: {
-            views_count: {
-              increment: 1,
-            },
-          },
-        });
+      // Check if user can view draft posts
+      if (post.status === PostEnum.DRAFT && post.userId !== userId) {
+        throw new ForbiddenException('You cannot view this draft post');
       }
 
-      return post;
+      // Check if viewer is not the author to increment view count
+      if (post.userId !== userId && post.status === PostEnum.PUBLISHED) {
+        await this.incrementViewCount(postId);
+      }
+
+      // Check if user has liked the post
+      const userLiked = await this.prisma.postLikes.findUnique({
+        where: { postId_userId: { postId, userId } },
+      });
+
+      return {
+        ...post,
+        userLiked: !!userLiked,
+      };
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to fetch post');
     }
   }
 
-  // Create Post
+  private async incrementViewCount(postId: number): Promise<void> {
+    await this.prisma.posts.update({
+      where: { id: postId },
+      data: { views_count: { increment: 1 } },
+    });
+  }
+
   async createPost(
     userId: number,
     createPostDto: CreatePostDTO,
     files: Express.Multer.File[],
   ) {
-    const { title, content, status } = createPostDto;
+    const { title, content, status = PostEnum.PUBLISHED } = createPostDto;
 
     if (!files || files.length === 0) {
       throw new BadRequestException('No media files uploaded');
     }
 
     try {
+      const mediaUrls = await this.uploadFilesToCloudinary(files);
+
+      return await this.prisma.posts.create({
+        data: {
+          title,
+          content,
+          status,
+          media_url: mediaUrls,
+          userId,
+        },
+        include: {
+          user: {
+            select: {
+              username: true,
+              profile_picture: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      await this.cleanupFiles(files);
+      throw new InternalServerErrorException(
+        'Failed to create post: ' + error.message,
+      );
+    }
+  }
+
+  private async uploadFilesToCloudinary(
+    files: Express.Multer.File[],
+  ): Promise<string[]> {
+    try {
       const mediaUrls = await Promise.all(
         files.map(async (file) => {
           const isVideo = file.mimetype.startsWith('video/');
-          const uploadResult = await this.uploadFileToCloudinary(
+          const uploadResult = await uploadToCloudinary(
             file.path,
-            isVideo,
+            isVideo ? 'video' : 'image',
           );
           await fs.promises.unlink(file.path);
           return uploadResult.secure_url;
         }),
       );
-
-      const newPost = await this.prisma.posts.create({
-        data: {
-          title,
-          content,
-          status: PostEnum.PUBLISHED ?? status,
-          media_url: mediaUrls,
-          userId,
-        },
-      });
-
-      return newPost;
+      return mediaUrls;
     } catch (error) {
-      await this.cleanupFiles(files);
-      throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException('Failed to upload media files');
     }
   }
 
-  // Set condition of video or image
-  async uploadFileToCloudinary(filePath: string, isVideo: boolean) {
-    return uploadToCloudinary(filePath, isVideo ? 'video' : 'image');
-  }
-
-  // If any error occurred the remove file
-  async cleanupFiles(files: Express.Multer.File[]) {
+  private async cleanupFiles(files: Express.Multer.File[]): Promise<void> {
     await Promise.all(
       files.map(async (file) => {
         if (file.path && fs.existsSync(file.path)) {
@@ -149,88 +225,140 @@ export class PostService {
     );
   }
 
-  // Edit Post
   async editPost(postId: number, userId: number, editPostDto: EditPostDTO) {
-    const { title, content, status, media_url } = editPostDto;
-
     try {
-      const post = await this.singlePost(postId);
-
-      const updatePost = await this.prisma.posts.update({
-        where: { id: post.id },
-        data: {
-          title: title ?? post.title,
-          content: content ?? post.content,
-          status: status ?? post.status,
-          media_url: media_url ?? post.media_url,
-        },
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
       });
 
-      return updatePost;
-    } catch (error) {
-      throw new InternalServerErrorException(error);
-    }
-  }
-
-  // Delete Post
-  async deletePost(postId: number, userId: number) {
-    try {
-      await this.singlePost(postId);
-
-      return this.prisma.posts.delete({ where: { id: postId } });
-    } catch (error) {
-      throw new InternalServerErrorException(error);
-    }
-  }
-
-  // Pinning Post
-  async pinningPost(postId: number, userId: number) {
-    try {
-      // Find the post
-      const post = await this.singlePost(postId);
-
-      if (userId !== post.userId) {
-        throw new ForbiddenException('You are not allowed to pin this post');
+      if (!post) {
+        throw new NotFoundException('Post not found');
       }
 
-      const pinnedPost = await this.prisma.posts.update({
+      if (post.userId !== userId) {
+        throw new ForbiddenException('You can only edit your own posts');
+      }
+
+      const { title, content, status, media_url } = editPostDto;
+
+      return await this.prisma.posts.update({
         where: { id: postId },
         data: {
-          pinned: !post.pinned, // Toggle: true / false
+          ...(title && { title }),
+          ...(content && { content }),
+          ...(status && { status }),
+          ...(media_url && { media_url }),
+        },
+        include: {
+          user: {
+            select: {
+              username: true,
+              profile_picture: true,
+            },
+          },
         },
       });
-
-      return pinnedPost;
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to update post');
     }
   }
 
-  // Like Post
+  async deletePost(postId: number, userId: number) {
+    try {
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
+      });
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      if (post.userId !== userId) {
+        throw new ForbiddenException('You can only delete your own posts');
+      }
+
+      // Delete all comments, likes, and the post itself in a transaction
+      return await this.prisma.$transaction(async (prisma) => {
+        await prisma.comments.deleteMany({ where: { postId } });
+        await prisma.postLikes.deleteMany({ where: { postId } });
+        return prisma.posts.delete({ where: { id: postId } });
+      });
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to delete post');
+    }
+  }
+
+  async pinningPost(postId: number, userId: number) {
+    try {
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
+      });
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      if (post.userId !== userId) {
+        throw new ForbiddenException('You can only pin your own posts');
+      }
+
+      return await this.prisma.posts.update({
+        where: { id: postId },
+        data: { pinned: !post.pinned },
+      });
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to pin/unpin post');
+    }
+  }
+
   async likePost(postId: number, userId: number) {
     try {
+      // First check if post exists
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
+      });
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
       // Check if user has already liked the post
       const existingLike = await this.prisma.postLikes.findUnique({
-        where: {
-          postId_userId: { postId, userId },
-        },
+        where: { postId_userId: { postId, userId } },
       });
+
       if (existingLike) {
-        // If like exists, remove it (decrement count)
+        // Unlike the post if already liked
         const [updatedPost] = await this.prisma.$transaction([
           this.prisma.posts.update({
             where: { id: postId },
-            data: {
-              likes_count: { decrement: 1 },
-            },
+            data: { likes_count: { decrement: 1 } },
           }),
           this.prisma.postLikes.delete({
             where: { postId_userId: { postId, userId } },
           }),
         ]);
-        return { message: 'Like removed', post: updatedPost };
+        return { message: 'Post unliked', post: updatedPost };
       } else {
-        // Start a transaction to like the post
+        // Like the post if not already liked
         const [updatedPost] = await this.prisma.$transaction([
           this.prisma.posts.update({
             where: { id: postId },
@@ -243,60 +371,90 @@ export class PostService {
         return { message: 'Post liked', post: updatedPost };
       }
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to like/unlike post');
     }
   }
 
-  // Comment Post
   async commentPost(
     postId: number,
     userId: number,
     commentPostDto: CommentPostDTO,
   ) {
     try {
+      // Verify post exists
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
       });
+
       if (!post) {
         throw new NotFoundException('Post not found');
       }
 
+      // Verify user exists
       const user = await this.prisma.users.findUnique({
         where: { id: userId },
       });
+
       if (!user) {
         throw new NotFoundException('User not found');
       }
 
-      const { content } = commentPostDto;
-
-      const newComment = await this.prisma.comments.create({
+      // Create comment
+      return await this.prisma.comments.create({
         data: {
           postId,
           userId,
-          content,
+          content: commentPostDto.content,
+        },
+        include: {
+          user: {
+            select: {
+              username: true,
+              profile_picture: true,
+            },
+          },
         },
       });
-
-      return newComment;
     } catch (error) {
-      throw new InternalServerErrorException(error.message);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to create comment');
     }
   }
 
-  // All comments
-  async allComments(postId: number) {
+  async getComments(postId: number) {
     try {
+      // Verify post exists
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
       });
+
       if (!post) {
         throw new NotFoundException('Post not found');
       }
 
-      return this.prisma.comments.findMany({ where: { postId } });
+      // Get comments with user info
+      return await this.prisma.comments.findMany({
+        where: { postId },
+        orderBy: { created_at: 'desc' },
+        include: {
+          user: {
+            select: {
+              username: true,
+              profile_picture: true,
+            },
+          },
+        },
+      });
     } catch (error) {
-      throw new InternalServerErrorException(error.message);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to fetch comments');
     }
   }
 }
