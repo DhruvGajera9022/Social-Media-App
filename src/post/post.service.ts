@@ -92,46 +92,52 @@ export class PostService {
   ) {
     const { title, content, status } = createPostDto;
 
-    try {
-      // Ensure files exist
-      if (!files || files.length === 0) {
-        throw new Error('No files uploaded');
-      }
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No media files uploaded');
+    }
 
-      // Upload each file to Cloudinary
-      const uploadResults = await Promise.all(
+    try {
+      const mediaUrls = await Promise.all(
         files.map(async (file) => {
-          const result = await uploadToCloudinary(file.path);
-          await fs.promises.unlink(file.path); // Remove file after upload
-          return result.secure_url;
+          const isVideo = file.mimetype.startsWith('video/');
+          const uploadResult = await this.uploadFileToCloudinary(
+            file.path,
+            isVideo,
+          );
+          await fs.promises.unlink(file.path);
+          return uploadResult.secure_url;
         }),
       );
 
-      // Store URLs in database
       const newPost = await this.prisma.posts.create({
         data: {
           title,
           content,
           status: PostEnum.PUBLISHED ?? status,
-          media_url: uploadResults,
-          userId: userId,
+          media_url: mediaUrls,
+          userId,
         },
       });
 
       return newPost;
     } catch (error) {
-      // Clean up any remaining files if an error occurs
-      if (files) {
-        await Promise.all(
-          files.map(async (file) => {
-            if (file.path && fs.existsSync(file.path)) {
-              await fs.promises.unlink(file.path);
-            }
-          }),
-        );
-      }
-      throw new InternalServerErrorException(error);
+      await this.cleanupFiles(files);
+      throw new InternalServerErrorException(error.message);
     }
+  }
+
+  async uploadFileToCloudinary(filePath: string, isVideo: boolean) {
+    return uploadToCloudinary(filePath, isVideo ? 'video' : 'image');
+  }
+
+  async cleanupFiles(files: Express.Multer.File[]) {
+    await Promise.all(
+      files.map(async (file) => {
+        if (file.path && fs.existsSync(file.path)) {
+          await fs.promises.unlink(file.path);
+        }
+      }),
+    );
   }
 
   // Edit Post

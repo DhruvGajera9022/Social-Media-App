@@ -39,6 +39,7 @@ model Users {
   PostLikes              PostLikes[]
   blockedBy              BlockList[]      @relation("BlockedRelation")
   blocking               BlockList[]      @relation("BlockerRelation")
+  Comments               Comments[]
 }
 
 model RefreshToken {
@@ -77,6 +78,7 @@ model Posts {
   created_at  DateTime    @default(now())
   updated_at  DateTime    @updatedAt
   PostLikes   PostLikes[]
+  Comments    Comments[]
 }
 
 enum PostStatus {
@@ -123,4 +125,14 @@ model BlockList {
   blocked Users @relation(fields: [blockedId], references: [id], name: "BlockedRelation")
 
   @@unique([blockerId, blockedId])
+}
+
+model Comments {
+  id      Int    @id @default(autoincrement())
+  postId  Int
+  userId  Int
+  content String
+
+  post Posts @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
