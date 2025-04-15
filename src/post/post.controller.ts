@@ -27,6 +27,7 @@ import { EditPostDTO } from './dto/edit-post.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { CommentPostDTO } from './dto/comment-post.dto';
 
 @ApiTags('Posts') // Groups this under "Posts" in Swagger documentation
 @Controller('post')
@@ -184,6 +185,27 @@ export class PostController {
       return Response(true, 'Post deleted successfully', deletePost);
     } catch (error) {
       return Response(false, 'Failed to delete the post', error.message);
+    }
+  }
+
+  // Comment post
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/comment')
+  async commentPost(
+    @Param('id') id: string,
+    @Req() req,
+    @Body() commentPostDto: CommentPostDTO,
+  ) {
+    try {
+      const userId = +req.user.userId;
+      const newComment = await this.postService.commentPost(
+        +id,
+        userId,
+        commentPostDto,
+      );
+      return Response(true, 'Comment added successfully.', newComment);
+    } catch (error) {
+      return Response(false, 'Fail to comment in the post.', error.message);
     }
   }
 }

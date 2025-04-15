@@ -12,6 +12,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
 import { uploadToCloudinary } from 'src/utils/cloudinary.util';
 import { PostEnum } from './enum/post-status.enum';
+import { CommentPostDTO } from './dto/comment-post.dto';
 
 @Injectable()
 export class PostService {
@@ -40,6 +41,12 @@ export class PostService {
           select: {
             username: true,
             profile_picture: true,
+          },
+        },
+        Comments: {
+          select: {
+            userId: true,
+            content: true,
           },
         },
       },
@@ -126,10 +133,12 @@ export class PostService {
     }
   }
 
+  // Set condition of video or image
   async uploadFileToCloudinary(filePath: string, isVideo: boolean) {
     return uploadToCloudinary(filePath, isVideo ? 'video' : 'image');
   }
 
+  // If any error occurred the remove file
   async cleanupFiles(files: Express.Multer.File[]) {
     await Promise.all(
       files.map(async (file) => {
@@ -235,6 +244,43 @@ export class PostService {
       }
     } catch (error) {
       throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Comment Post
+  async commentPost(
+    postId: number,
+    userId: number,
+    commentPostDto: CommentPostDTO,
+  ) {
+    try {
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
+      });
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      const user = await this.prisma.users.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const { content } = commentPostDto;
+
+      const newComment = await this.prisma.comments.create({
+        data: {
+          postId,
+          userId,
+          content,
+        },
+      });
+
+      return newComment;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }
