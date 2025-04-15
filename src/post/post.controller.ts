@@ -208,4 +208,15 @@ export class PostController {
       return Response(false, 'Fail to comment in the post.', error.message);
     }
   }
+
+  // Posts all comment
+  @Get(':id/comment')
+  async getComments(@Param('id') id: string) {
+    try {
+      const comments = await this.postService.allComments(+id);
+      return Response(true, 'Comments retrieved successfully.', comments);
+    } catch (error) {
+      return Response(false, 'Fail to get comments', error.message);
+    }
+  }
 }

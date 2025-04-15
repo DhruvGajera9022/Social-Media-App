@@ -283,4 +283,20 @@ export class PostService {
       throw new InternalServerErrorException(error.message);
     }
   }
+
+  // All comments
+  async allComments(postId: number) {
+    try {
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
+      });
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      return this.prisma.comments.findMany({ where: { postId } });
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
 }
