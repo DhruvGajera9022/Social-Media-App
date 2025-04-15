@@ -189,6 +189,11 @@ export class PostController {
   }
 
   // Comment post
+  @ApiOperation({ summary: 'Comment on a post' })
+  @ApiParam({ name: 'id', type: Number, description: 'Post ID', example: 1 })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Comment added successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid post ID or comment data.' })
   @UseGuards(JwtAuthGuard)
   @Post(':id/comment')
   async commentPost(
@@ -210,6 +215,10 @@ export class PostController {
   }
 
   // Posts all comment
+  @ApiOperation({ summary: 'Get all comments for a post' })
+  @ApiParam({ name: 'id', type: Number, description: 'Post ID', example: 1 })
+  @ApiResponse({ status: 200, description: 'Comments retrieved successfully.' })
+  @ApiResponse({ status: 404, description: 'Post not found.' })
   @Get(':id/comment')
   async getComments(@Param('id') id: string) {
     try {
