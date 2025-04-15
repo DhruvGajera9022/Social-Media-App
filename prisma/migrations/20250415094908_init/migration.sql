@@ -5,8 +5,8 @@ CREATE TYPE "PostStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 CREATE TABLE "Users" (
     "id" SERIAL NOT NULL,
     "username" TEXT NOT NULL,
-    "firstName" TEXT NOT NULL,
-    "lastName" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL DEFAULT '',
+    "lastName" TEXT NOT NULL DEFAULT '',
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "roleId" INTEGER NOT NULL DEFAULT 2,
@@ -101,6 +101,16 @@ CREATE TABLE "BlockList" (
     CONSTRAINT "BlockList_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Comments" (
+    "id" SERIAL NOT NULL,
+    "postId" INTEGER NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "content" TEXT NOT NULL,
+
+    CONSTRAINT "Comments_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Users_email_key" ON "Users"("email");
 
@@ -163,3 +173,9 @@ ALTER TABLE "BlockList" ADD CONSTRAINT "BlockList_blockerId_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "BlockList" ADD CONSTRAINT "BlockList_blockedId_fkey" FOREIGN KEY ("blockedId") REFERENCES "Users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comments" ADD CONSTRAINT "Comments_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Posts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comments" ADD CONSTRAINT "Comments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
