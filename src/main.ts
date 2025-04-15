@@ -38,7 +38,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Using custom logger instead of default logger
-  // Changes
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
   app.useLogger(logger);
 
