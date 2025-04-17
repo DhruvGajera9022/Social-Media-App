@@ -27,9 +27,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'src/utils/response.util';
 import { TwoFactorAuthDTO } from './dto/two-factor-auth.dto';
 import { TwoFactorAuthLoginDTO } from 'src/authentication/dto/2fa-auth.dto';
+import { Response } from 'express';
+import { successResponse, errorResponse } from '../utils/response.util'; // Adjust the import path as needed
 
 @ApiTags('Profile') // Tags for api documentation
 @ApiBearerAuth() // Requires authentication in Swagger
@@ -43,12 +44,12 @@ export class ProfileController {
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@Req() req) {
+  async getProfile(@Req() req, @Res() res: Response) {
     try {
       const profile = await this.profileService.getProfile(+req.user.userId);
-      return Response(true, 'Profile fetched successfully', profile);
+      return successResponse(res, 'Profile fetched successfully', profile);
     } catch (error) {
-      return Response(false, 'Failed to fetch profile data.', error.message);
+      return errorResponse(res, 400, 'Failed to fetch profile data.');
     }
   }
 
@@ -57,12 +58,12 @@ export class ProfileController {
   @ApiOperation({ summary: 'Get user profile by id' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfileById(@Param('id') id: string) {
+  async getProfileById(@Param('id') id: string, @Res() res: Response) {
     try {
       const profile = await this.profileService.getProfileById(+id);
-      return Response(true, 'Profile fetched successfully', profile);
+      return successResponse(res, 'Profile fetched successfully', profile);
     } catch (error) {
-      return Response(false, 'Failed to fetch profile data.', error.message);
+      return errorResponse(res, 400, 'Failed to fetch profile data.');
     }
   }
 
@@ -73,15 +74,19 @@ export class ProfileController {
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async editProfile(@Req() req, @Body() editProfileDto: EditProfileDTO) {
+  async editProfile(
+    @Req() req,
+    @Body() editProfileDto: EditProfileDTO,
+    @Res() res: Response,
+  ) {
     try {
       const editProfile = await this.profileService.editProfile(
         +req.user.userId,
         editProfileDto,
       );
-      return Response(true, 'Profile edited successfully', editProfile);
+      return successResponse(res, 'Profile edited successfully', editProfile);
     } catch (error) {
-      return Response(false, 'Failed to edit profile.', error.message);
+      return errorResponse(res, 400, 'Failed to edit profile.');
     }
   }
 
@@ -120,6 +125,7 @@ export class ProfileController {
   async updateProfilePicture(
     @Req() req,
     @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
   ) {
     try {
       const userId = +req.user.userId;
@@ -127,9 +133,9 @@ export class ProfileController {
         userId,
         file,
       );
-      return { status: true, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(false, 'Fail to update profile-picture', error.message);
+      return errorResponse(res, 400, 'Fail to update profile-picture');
     }
   }
 
@@ -143,18 +149,14 @@ export class ProfileController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async removeProfilePicture(@Req() req) {
+  async removeProfilePicture(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
       const { message } =
         await this.profileService.removeProfilePicture(userId);
-      return { success: true, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(
-        false,
-        'Fail to remove the profile-picture',
-        error.message,
-      );
+      return errorResponse(res, 400, 'Fail to remove the profile-picture');
     }
   }
 
@@ -164,16 +166,20 @@ export class ProfileController {
   @ApiOperation({ summary: 'Send a follow request' })
   @ApiResponse({ status: 201, description: 'Follow request sent.' })
   @ApiResponse({ status: 400, description: 'Follow request already sent.' })
-  async requestToFollow(@Param('id') targetId: string, @Req() req) {
+  async requestToFollow(
+    @Param('id') targetId: string,
+    @Req() req,
+    @Res() res: Response,
+  ) {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.requestToFollow(
         +targetId,
         userId,
       );
-      return { status: false, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(false, 'Fail to send follow request.', error);
+      return errorResponse(res, 400, 'Fail to send follow request.');
     }
   }
 
@@ -183,16 +189,20 @@ export class ProfileController {
   @ApiOperation({ summary: 'Accept a follow request' })
   @ApiResponse({ status: 200, description: 'Follow request accepted.' })
   @ApiResponse({ status: 400, description: 'No follow request found.' })
-  async acceptFollow(@Param('id') requesterId: string, @Req() req) {
+  async acceptFollow(
+    @Param('id') requesterId: string,
+    @Req() req,
+    @Res() res: Response,
+  ) {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.acceptFollowRequest(
         +requesterId,
         userId,
       );
-      return { status: true, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(false, 'Fail to accept the request.', error);
+      return errorResponse(res, 400, 'Fail to accept the request.');
     }
   }
 
@@ -202,16 +212,20 @@ export class ProfileController {
   @ApiOperation({ summary: 'Cancel a follow request' })
   @ApiResponse({ status: 200, description: 'Follow request canceled.' })
   @ApiResponse({ status: 400, description: 'No follow request found.' })
-  async cancelFollowRequest(@Req() req, @Param('id') targetId: number) {
+  async cancelFollowRequest(
+    @Req() req,
+    @Param('id') targetId: number,
+    @Res() res: Response,
+  ) {
     try {
       const requesterId = req.user.userId;
       const { message } = await this.profileService.cancelFollowRequest(
         requesterId,
         +targetId,
       );
-      return { status: true, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(true, 'Fail to cancel follow request.', error.message);
+      return errorResponse(res, 400, 'Fail to cancel follow request.');
     }
   }
 
@@ -221,16 +235,20 @@ export class ProfileController {
   @ApiOperation({ summary: 'Unfollow a user' })
   @ApiResponse({ status: 200, description: 'Unfollowed successfully.' })
   @ApiResponse({ status: 400, description: 'You are not following this user.' })
-  async unfollow(@Param('id') targetId: string, @Req() req) {
+  async unfollow(
+    @Param('id') targetId: string,
+    @Req() req,
+    @Res() res: Response,
+  ) {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.unfollowUser(
         +targetId,
         userId,
       );
-      return { status: false, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(false, 'Fail to unfollow user.', error);
+      return errorResponse(res, 400, 'Fail to unfollow user.');
     }
   }
 
@@ -243,17 +261,17 @@ export class ProfileController {
     description: 'Successfully retrieved followers list.',
   })
   @ApiResponse({ status: 400, description: 'Fail retrieved followers list.' })
-  async getFollowers(@Req() req) {
+  async getFollowers(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
       const userFollowers = await this.profileService.followersList(userId);
-      return Response(
-        true,
+      return successResponse(
+        res,
         'Successfully retrieved followers list.',
         userFollowers,
       );
     } catch (error) {
-      return Response(true, 'Fail to get followers list.', error.message);
+      return errorResponse(res, 400, 'Fail to get followers list.');
     }
   }
 
@@ -266,17 +284,17 @@ export class ProfileController {
     description: 'Successfully retrieved following list.',
   })
   @ApiResponse({ status: 400, description: 'Fail retrieved following list.' })
-  async getFollowing(@Req() req) {
+  async getFollowing(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
       const userFollowing = await this.profileService.followingList(userId);
-      return Response(
-        true,
+      return successResponse(
+        res,
         'Successfully retrieved following list.',
         userFollowing,
       );
     } catch (error) {
-      return Response(true, 'Fail to get following list.', error.message);
+      return errorResponse(res, 400, 'Fail to get following list.');
     }
   }
 
@@ -289,18 +307,18 @@ export class ProfileController {
     description: 'Follow requests fetched successfully.',
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async followRequests(@Req() req) {
+  async followRequests(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
       const followRequests =
         await this.profileService.getFollowRequests(userId);
-      return Response(
-        true,
+      return successResponse(
+        res,
         'Follow requests fetched successfully.',
         followRequests,
       );
     } catch (error) {
-      return Response(false, 'Fail to get follow requests.', error.message);
+      return errorResponse(res, 400, 'Fail to get follow requests.');
     }
   }
 
@@ -312,16 +330,20 @@ export class ProfileController {
   })
   @ApiResponse({ status: 200, description: 'User blocked successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async blockUser(@Param('id') targetId: string, @Req() req) {
+  async blockUser(
+    @Param('id') targetId: string,
+    @Req() req,
+    @Res() res: Response,
+  ) {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.blockUser(
         userId,
         +targetId,
       );
-      return { success: true, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(false, 'Fail to block user.', error.message);
+      return errorResponse(res, 400, 'Fail to block user.');
     }
   }
 
@@ -333,16 +355,20 @@ export class ProfileController {
   })
   @ApiResponse({ status: 200, description: 'User unblocked successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async unblockUser(@Param('id') targetId: string, @Req() req) {
+  async unblockUser(
+    @Param('id') targetId: string,
+    @Req() req,
+    @Res() res: Response,
+  ) {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.unblockUser(
         userId,
         +targetId,
       );
-      return { success: true, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(false, 'Fail to unblock user.', error.message);
+      return errorResponse(res, 400, 'Fail to unblock user.');
     }
   }
 
@@ -355,20 +381,20 @@ export class ProfileController {
     description: 'Returns whether the user is blocked.',
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async isUserBlocked(@Param('id') targetId: string, @Req() req) {
+  async isUserBlocked(
+    @Param('id') targetId: string,
+    @Req() req,
+    @Res() res: Response,
+  ) {
     try {
       const userId = +req.user.userId;
       const isBlocked = await this.profileService.isUserBlocked(
         userId,
         +targetId,
       );
-      return { success: true, isBlocked };
+      return successResponse(res, 'Block status retrieved', { isBlocked });
     } catch (error) {
-      return Response(
-        false,
-        'Fail to check user is blocked or not.',
-        error.message,
-      );
+      return errorResponse(res, 400, 'Fail to check user is blocked or not.');
     }
   }
 
@@ -381,21 +407,17 @@ export class ProfileController {
     description: 'Successfully retrieved blocked list.',
   })
   @ApiResponse({ status: 400, description: 'Fail retrieved blocked list.' })
-  async blockedList(@Req() req) {
+  async blockedList(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
       const blockedUsers = await this.profileService.getBlockedUsers(userId);
-      return Response(
-        true,
+      return successResponse(
+        res,
         'Blocked users retrieved successfully.',
         blockedUsers,
       );
     } catch (error) {
-      return Response(
-        false,
-        'Fail to retrieve the blocked users.',
-        error.message,
-      );
+      return errorResponse(res, 400, 'Fail to retrieve the blocked users.');
     }
   }
 
@@ -408,20 +430,24 @@ export class ProfileController {
     description: 'Mutual followers fetched successfully.',
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async mutualFollowers(@Param('id') targetId: string, @Req() req) {
+  async mutualFollowers(
+    @Param('id') targetId: string,
+    @Req() req,
+    @Res() res: Response,
+  ) {
     try {
       const userId = +req.user.userId;
       const mutualFollowers = await this.profileService.getMutualFollowers(
         +targetId,
         userId,
       );
-      return Response(
-        true,
+      return successResponse(
+        res,
         'Mutual followers fetched successfully.',
         mutualFollowers,
       );
     } catch (error) {
-      return Response(false, 'Fail to get mutual followers.', error.message);
+      return errorResponse(res, 400, 'Fail to get mutual followers.');
     }
   }
 
@@ -434,13 +460,13 @@ export class ProfileController {
     description: 'Account deactivated successfully.',
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async deactivateAccount(@Req() req) {
+  async deactivateAccount(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.deactivateAccount(userId);
-      return { status: true, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(false, 'Fail to deactivate account.', error.message);
+      return errorResponse(res, 400, 'Fail to deactivate account.');
     }
   }
 
@@ -453,13 +479,13 @@ export class ProfileController {
     description: 'Account reactivated successfully.',
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async reactivateAccount(@Req() req) {
+  async reactivateAccount(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.reactivateAccount(userId);
-      return { status: true, message };
+      return successResponse(res, message);
     } catch (error) {
-      return Response(false, 'Fail to reactivate account.', error.message);
+      return errorResponse(res, 400, 'Fail to reactivate account.');
     }
   }
 
@@ -472,31 +498,35 @@ export class ProfileController {
     description: 'Search results fetched successfully',
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async searchUser(@Param('query') query: string, @Req() req) {
+  async searchUser(
+    @Param('query') query: string,
+    @Req() req,
+    @Res() res: Response,
+  ) {
     try {
       const userId = +req.user.userId;
       const users = await this.profileService.searchUser(userId, query);
-      return Response(true, 'Search results fetched successfully', users);
+      return successResponse(res, 'Search results fetched successfully', users);
     } catch (error) {
-      return Response(false, 'Fail to search user.');
+      return errorResponse(res, 400, 'Fail to search user.');
     }
   }
 
   // 📌 Generate 2FA secret and QR code
   @Post('2fa/generate')
   @UseGuards(JwtAuthGuard)
-  async generateTwoFactorAuth(@Req() req) {
+  async generateTwoFactorAuth(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
       const user = await this.profileService.getUserData(userId);
 
       // Check if user already has 2FA secret (optional reset)
       if (user.secret_2fa) {
-        return {
-          status: false,
-          message:
-            'Two-factor authentication is already set up. Disable it first to generate a new secret.',
-        };
+        return errorResponse(
+          res,
+          400,
+          'Two-factor authentication is already set up. Disable it first to generate a new secret.',
+        );
       }
 
       const { otpAuthUrl, secret } =
@@ -506,17 +536,12 @@ export class ProfileController {
       const qrCode =
         await this.profileService.generateQrCodeDataURL(otpAuthUrl);
 
-      return {
-        status: true,
-        message: 'QR code generated',
-        secret,
-        qrCode,
-      };
+      return successResponse(res, 'QR code generated', { secret, qrCode });
     } catch (error) {
-      return Response(
-        false,
+      return errorResponse(
+        res,
+        400,
         'Fail to enable two factor authentication.',
-        error.message,
       );
     }
   }
@@ -527,6 +552,7 @@ export class ProfileController {
   async turnOnTwoFactorAuth(
     @Req() req,
     @Body() twoFactorAuthDto: TwoFactorAuthDTO,
+    @Res() res: Response,
   ) {
     try {
       // Get user data from JWT token
@@ -535,17 +561,19 @@ export class ProfileController {
 
       // Check if 2FA is enabled or not
       if (!user.secret_2fa) {
-        throw new BadRequestException(
+        return errorResponse(
+          res,
+          400,
           'Two-factor authentication is not set up yet. Generate a secret first.',
         );
       }
 
       // Check if 2FA is already enabled
       if (user.is_2fa) {
-        return {
-          status: true,
-          message: 'Two-factor authentication is already enabled',
-        };
+        return successResponse(
+          res,
+          'Two-factor authentication is already enabled',
+        );
       }
 
       // Verify the code and secret
@@ -557,29 +585,31 @@ export class ProfileController {
 
       // Check it code is valid or not
       if (!isCodeValid) {
-        throw new UnauthorizedException('Invalid authentication code');
+        return errorResponse(res, 401, 'Invalid authentication code');
       }
 
       // Enable the 2FA
       await this.profileService.enableTwoFactorAuth(user);
 
-      return {
-        status: true,
-        message: 'Two-factor authentication has been enabled',
-      };
+      return successResponse(res, 'Two-factor authentication has been enabled');
     } catch (error) {
-      return Response(false, 'Fail to turn on 2FA', error.message);
+      return errorResponse(res, 400, 'Fail to turn on 2FA');
     }
   }
 
   // Authenticate with 2FA code after login
   @Post('2fa/authenticate')
-  async authenticate2FA(@Body() twoFALoginDto: TwoFactorAuthLoginDTO) {
+  async authenticate2FA(
+    @Body() twoFALoginDto: TwoFactorAuthLoginDTO,
+    @Res() res: Response,
+  ) {
     try {
       const user = await this.profileService.getUserData(+twoFALoginDto.id);
 
       if (!user.secret_2fa) {
-        throw new BadRequestException(
+        return errorResponse(
+          res,
+          400,
           'Two-factor authentication is not set up for this user',
         );
       }
@@ -591,14 +621,18 @@ export class ProfileController {
         );
 
       if (!isCodeValid) {
-        throw new UnauthorizedException('Invalid authentication code');
+        return errorResponse(res, 401, 'Invalid authentication code');
       }
 
       const login2FA = await this.profileService.loginWith2FA(user);
 
-      return Response(true, 'Two Factor Authentication Successfully', login2FA);
+      return successResponse(
+        res,
+        'Two Factor Authentication Successfully',
+        login2FA,
+      );
     } catch (error) {
-      return Response(false, 'Fail to 2FA authentication', error.message);
+      return errorResponse(res, 400, 'Fail to 2FA authentication');
     }
   }
 }
