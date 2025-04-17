@@ -9,12 +9,12 @@ import {
   Patch,
   Post,
   Req,
+  Res,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { PostService } from './post.service';
-import { Response } from 'src/utils/response.util';
 import {
   ApiBearerAuth,
   ApiConsumes,
@@ -30,7 +30,8 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { CommentPostDTO } from './dto/comment-post.dto';
-import { Request } from 'express';
+import { Request, Response as ExpressResponse } from 'express';
+import { errorResponse, successResponse } from 'src/utils/response.util';
 
 @ApiTags('Posts')
 @Controller('post')
@@ -44,12 +45,12 @@ export class PostController {
   })
   @ApiResponse({ status: 500, description: 'Server error' })
   @Get()
-  async getPosts() {
+  async getPosts(@Res() res: ExpressResponse) {
     try {
       const posts = await this.postService.getPosts();
-      return Response(true, 'Posts retrieved successfully', posts);
+      return successResponse(res, 'Posts retrieved successfully', posts);
     } catch (error) {
-      return Response(false, 'Failed to retrieve posts', error.message);
+      return errorResponse(res, 500, error.message);
     }
   }
 
@@ -60,13 +61,20 @@ export class PostController {
   @ApiResponse({ status: 500, description: 'Server error' })
   @ApiBearerAuth()
   @Get('bookmarks')
-  async getBookmarks(@Req() req: Request & { user: { userId: number } }) {
+  async getBookmarks(
+    @Req() req: Request & { user: { userId: number } },
+    @Res() res: ExpressResponse,
+  ) {
     try {
       const userId = req.user.userId;
       const bookmarks = await this.postService.getBookmarks(userId);
-      return Response(true, 'Bookmarked posts fetched successfully', bookmarks);
+      return successResponse(
+        res,
+        'Bookmarked posts fetched successfully',
+        bookmarks,
+      );
     } catch (error) {
-      return Response(false, 'Failed to fetch bookmarks', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -76,12 +84,15 @@ export class PostController {
   @ApiResponse({ status: 404, description: 'Post not found' })
   @ApiResponse({ status: 500, description: 'Server error' })
   @Get(':id/comment')
-  async getComments(@Param('id', ParseIntPipe) id: number) {
+  async getComments(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: ExpressResponse,
+  ) {
     try {
       const comments = await this.postService.getComments(id);
-      return Response(true, 'Comments retrieved successfully', comments);
+      return successResponse(res, 'Comments retrieved successfully', comments);
     } catch (error) {
-      return Response(false, 'Failed to retrieve comments', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -96,13 +107,14 @@ export class PostController {
   async getPostById(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: { userId: number } },
+    @Res() res: ExpressResponse,
   ) {
     try {
       const userId = req.user.userId;
       const post = await this.postService.getPostById(id, userId);
-      return Response(true, 'Post retrieved successfully', post);
+      return successResponse(res, 'Post retrieved successfully', post);
     } catch (error) {
-      return Response(false, 'Failed to fetch post', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -134,10 +146,11 @@ export class PostController {
     @Req() req: Request & { user: { userId: number } },
     @Body() createPostDto: CreatePostDTO,
     @UploadedFiles() files: Express.Multer.File[],
+    @Res() res: ExpressResponse,
   ) {
     try {
       if (!files || files.length === 0) {
-        return Response(false, 'No files uploaded', null);
+        return errorResponse(res, 400, 'No files uploaded');
       }
 
       const userId = req.user.userId;
@@ -146,9 +159,9 @@ export class PostController {
         createPostDto,
         files,
       );
-      return Response(true, 'Post created successfully', newPost);
+      return successResponse(res, 'Post created successfully', newPost);
     } catch (error) {
-      return Response(false, 'Failed to create post', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -165,6 +178,7 @@ export class PostController {
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: { userId: number } },
     @Body() editPostDto: EditPostDTO,
+    @Res() res: ExpressResponse,
   ) {
     try {
       const userId = req.user.userId;
@@ -173,9 +187,9 @@ export class PostController {
         userId,
         editPostDto,
       );
-      return Response(true, 'Post edited successfully', editedPost);
+      return successResponse(res, 'Post edited successfully', editedPost);
     } catch (error) {
-      return Response(false, 'Failed to edit post', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -194,6 +208,7 @@ export class PostController {
   async pinPost(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: { userId: number } },
+    @Res() res: ExpressResponse,
   ) {
     try {
       const userId = req.user.userId;
@@ -202,9 +217,9 @@ export class PostController {
         ? 'Post pinned successfully'
         : 'Post unpinned successfully';
 
-      return Response(true, pinnedMessage, pinnedPost);
+      return successResponse(res, pinnedMessage, pinnedPost);
     } catch (error) {
-      return Response(false, 'Failed to pin/unpin post', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -219,13 +234,14 @@ export class PostController {
   async likePost(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: { userId: number } },
+    @Res() res: ExpressResponse,
   ) {
     try {
       const userId = req.user.userId;
       const { message, post } = await this.postService.likePost(id, userId);
-      return Response(true, message, post);
+      return successResponse(res, message, post);
     } catch (error) {
-      return Response(false, 'Failed to like/unlike post', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -241,13 +257,14 @@ export class PostController {
   async deletePost(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: { userId: number } },
+    @Res() res: ExpressResponse,
   ) {
     try {
       const userId = req.user.userId;
       const deletedPost = await this.postService.deletePost(id, userId);
-      return Response(true, 'Post deleted successfully', deletedPost);
+      return successResponse(res, 'Post deleted successfully', deletedPost);
     } catch (error) {
-      return Response(false, 'Failed to delete post', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -264,6 +281,7 @@ export class PostController {
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: { userId: number } },
     @Body() commentPostDto: CommentPostDTO,
+    @Res() res: ExpressResponse,
   ) {
     try {
       const userId = req.user.userId;
@@ -272,9 +290,9 @@ export class PostController {
         userId,
         commentPostDto,
       );
-      return Response(true, 'Comment added successfully', newComment);
+      return successResponse(res, 'Comment added successfully', newComment);
     } catch (error) {
-      return Response(false, 'Failed to add comment', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 
@@ -288,13 +306,16 @@ export class PostController {
   async toggleBookmark(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: { userId: number } },
+    @Res() res: ExpressResponse,
   ) {
     try {
       const userId = req.user.userId;
       const result = await this.postService.toggleBookmark(id, userId);
-      return Response(true, result.message, { bookmarked: result.bookmarked });
+      return successResponse(res, result.message, {
+        bookmarked: result.bookmarked,
+      });
     } catch (error) {
-      return Response(false, 'Failed bookmark post', error.message);
+      return errorResponse(res, error.status || 500, error.message);
     }
   }
 }
