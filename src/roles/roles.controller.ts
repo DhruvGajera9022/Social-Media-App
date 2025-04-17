@@ -6,11 +6,12 @@ import {
   Param,
   Patch,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
-import { Response } from 'src/utils/response.util';
+import { successResponse, errorResponse } from 'src/utils/response.util';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { RolesGuard } from './guard/roles.guard';
 import { Roles } from './decorator/roles.decorator';
@@ -22,6 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { RolesEnum } from './enum/roles.enum';
+import { Response } from 'express';
 
 @ApiTags('Roles') // Tag for api documentation
 @ApiBearerAuth() // Adds Bearer token authentication in Swagger
@@ -37,12 +39,12 @@ export class RolesController {
   @ApiOperation({ summary: 'Create a new role (Admin only)' })
   @ApiResponse({ status: 201, description: 'Role created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  async create(@Body() createRoleDto: CreateRoleDto) {
+  async create(@Body() createRoleDto: CreateRoleDto, @Res() res: Response) {
     try {
       const createRole = await this.rolesService.createRole(createRoleDto);
-      return Response(true, 'Role created successfully.', createRole);
+      return successResponse(res, 'Role created successfully.', createRole);
     } catch (error) {
-      return Response(false, 'Fail to create role.', error);
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -51,12 +53,12 @@ export class RolesController {
   @Roles(RolesEnum.ADMIN)
   @ApiOperation({ summary: 'Retrieve all roles (Admin only)' })
   @ApiResponse({ status: 200, description: 'Roles retrieved successfully' })
-  async findAll() {
+  async findAll(@Res() res: Response) {
     try {
       const roles = await this.rolesService.findAll();
-      return Response(true, 'Role retrieved successfully.', roles);
+      return successResponse(res, 'Role retrieved successfully.', roles);
     } catch (error) {
-      return Response(false, 'Fail to retrieve roles.', error);
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -66,12 +68,12 @@ export class RolesController {
   @ApiOperation({ summary: 'Get a role by ID (Admin only)' })
   @ApiResponse({ status: 200, description: 'Role found successfully' })
   @ApiResponse({ status: 404, description: 'Role not found' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string, @Res() res: Response) {
     try {
       const role = await this.rolesService.findOne(+id);
-      return Response(true, 'Role found successfully.', role);
+      return successResponse(res, 'Role found successfully.', role);
     } catch (error) {
-      return Response(false, 'Fail to find role.', error);
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -84,12 +86,13 @@ export class RolesController {
   async updateRole(
     @Param('id') id: string,
     @Body() updateRoleDto: UpdateRoleDTO,
+    @Res() res: Response,
   ) {
     try {
       const updateRole = await this.rolesService.updateRole(+id, updateRoleDto);
-      return Response(true, 'Role updated successfully.', updateRole);
+      return successResponse(res, 'Role updated successfully.', updateRole);
     } catch (error) {
-      return Response(false, 'Fail to update role.', error);
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -99,12 +102,12 @@ export class RolesController {
   @ApiOperation({ summary: 'Delete a role (Admin only)' })
   @ApiResponse({ status: 200, description: 'Role deleted successfully' })
   @ApiResponse({ status: 404, description: 'Role not found' })
-  async deleteRole(@Param('id') id: string) {
+  async deleteRole(@Param('id') id: string, @Res() res: Response) {
     try {
       const deleteRole = await this.rolesService.deleteRole(+id);
-      return Response(true, 'Role deleted successfully.', deleteRole);
+      return successResponse(res, 'Role deleted successfully.', deleteRole);
     } catch (error) {
-      return Response(false, 'Fail to delete role.', error);
+      return errorResponse(res, 401, error.message);
     }
   }
 }
