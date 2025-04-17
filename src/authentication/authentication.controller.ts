@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  InternalServerErrorException,
   Patch,
   Post,
   Req,
@@ -27,13 +26,11 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'src/utils/response.util';
-import { Request, Response as ResponseExpress } from 'express';
+import { Response } from 'express';
 import { GoogleOAuthGuard } from './guard/google-oauth.guard';
-import { TwitterAuthGuard } from './guard/twitter-oauth.guard';
-import { FacebookAuthGuard } from './guard/facebook-oauth.guard';
 import { TwoFactorAuthLoginDTO } from './dto/2fa-auth.dto';
 import { ProfileService } from 'src/profile/profile.service';
+import { errorResponse, successResponse } from 'src/utils/response.util';
 
 @ApiTags('Authentication') // For api documentation tag
 @Controller('auth')
@@ -49,12 +46,12 @@ export class AuthenticationController {
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User successfully registered' })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  async register(@Body() registerDto: RegisterDTO) {
+  async register(@Body() registerDto: RegisterDTO, @Res() res: Response) {
     try {
       const register = await this.authenticationService.register(registerDto);
-      return Response(true, 'Registration successful', register);
+      return successResponse(res, 'Registration successful', register);
     } catch (error) {
-      return Response(false, 'Failed to register.', error.message);
+      return errorResponse(res, 400, error.message);
     }
   }
 
@@ -64,18 +61,21 @@ export class AuthenticationController {
   @ApiOperation({ summary: 'Authenticate user and generate an access token' })
   @ApiResponse({ status: 200, description: 'User successfully authenticated' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDTO) {
+  async login(@Body() loginDto: LoginDTO, @Res() res: Response) {
     try {
       const login = await this.authenticationService.login(loginDto);
-      return Response(true, 'Login successful', login);
+      return successResponse(res, 'Login successful', login);
     } catch (error) {
-      return Response(false, 'Failed to login.', error.message);
+      return errorResponse(res, 401, error.message);
     }
   }
 
   // Authenticate with 2FA code after login
   @Post('2fa/authenticate')
-  async authenticate2FA(@Body() twoFALoginDto: TwoFactorAuthLoginDTO) {
+  async authenticate2FA(
+    @Body() twoFALoginDto: TwoFactorAuthLoginDTO,
+    @Res() res: Response,
+  ) {
     try {
       const user = await this.profileService.getUserData(+twoFALoginDto.id);
 
@@ -97,32 +97,15 @@ export class AuthenticationController {
 
       const login2FA = await this.authenticationService.loginWith2FA(user);
 
-      return Response(true, 'Two Factor Authentication Successfully', login2FA);
+      return successResponse(
+        res,
+        'Two Factor Authentication Successfully',
+        login2FA,
+      );
     } catch (error) {
-      return Response(false, 'Fail to 2FA authentication', error.message);
+      return errorResponse(res, error.status || 400, error.message);
     }
   }
-
-  // // handle facebook login
-  // @Get('facebook')
-  // @UseGuards(FacebookAuthGuard)
-  // async facebookLogin(): Promise<any> {
-  //   // return { statusCode: HttpStatus.OK, message: 'Redirecting to Facebook...' };
-  // }
-
-  // // handle facebook redirect url
-  // @Get('/facebook/redirect')
-  // @UseGuards(FacebookAuthGuard)
-  // async facebookLoginRedirect(@Req() req: Request): Promise<any> {
-  //   try {
-  //     const facebookLogin = await this.authenticationService.facebookAuth(
-  //       req.user,
-  //     );
-  //     return Response(true, 'Facebook login successful.', facebookLogin);
-  //   } catch (error) {
-  //     return Response(false, 'Failed to login with facebook.', error.message);
-  //   }
-  // }
 
   // Start Google Login — only triggers Passport redirect
   @Get('google')
@@ -134,7 +117,7 @@ export class AuthenticationController {
   // Callback after Google login — process tokens and redirect
   @Get('google/callback')
   @UseGuards(GoogleOAuthGuard)
-  async googleAuthRedirect(@Req() req, @Res() res: ResponseExpress) {
+  async googleAuthRedirect(@Req() req, @Res() res: Response) {
     try {
       const googleLogin = await this.authenticationService.googleAuth(req.user);
 
@@ -148,18 +131,6 @@ export class AuthenticationController {
     }
   }
 
-  // // handle twitter login
-  // @Get('twitter')
-  // @UseGuards(TwitterAuthGuard)
-  // async twitterAuth() {}
-
-  // // handle twitter login callback
-  // @Get('twitter/callback')
-  // @UseGuards(TwitterAuthGuard)
-  // async twitterAuthRedirect(@Req() req) {
-  //   console.log(req.user);
-  // }
-
   // handle the refresh token
   @Post('refresh')
   @HttpCode(HttpStatus.OK) // Ensures it returns 200 OK
@@ -169,17 +140,20 @@ export class AuthenticationController {
     description: 'New access token generated successfully',
   })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  async refreshTokens(@Body() refreshTokenDto: RefreshTokenDTO) {
+  async refreshTokens(
+    @Body() refreshTokenDto: RefreshTokenDTO,
+    @Res() res: Response,
+  ) {
     try {
       const refresh =
         await this.authenticationService.refreshTokens(refreshTokenDto);
-      return Response(true, 'Refresh token generated successfully', refresh);
-    } catch (error) {
-      return Response(
-        false,
-        'Failed to generate refresh token.',
-        error.message,
+      return successResponse(
+        res,
+        'Refresh token generated successfully',
+        refresh,
       );
+    } catch (error) {
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -195,15 +169,16 @@ export class AuthenticationController {
   async changePassword(
     @Req() req,
     @Body() changePasswordDto: ChangePasswordDTO,
+    @Res() res: Response,
   ) {
     try {
-      const changePassword = this.authenticationService.changePassword(
+      await this.authenticationService.changePassword(
         +req.user.userId,
         changePasswordDto,
       );
-      return Response(false, 'Password changed.', changePassword);
+      return successResponse(res, 'Password changed successfully');
     } catch (error) {
-      return Response(false, 'Failed to change password.', error.message);
+      return errorResponse(res, error.status || 400, error.message);
     }
   }
 
@@ -219,13 +194,16 @@ export class AuthenticationController {
   })
   @ApiResponse({ status: 400, description: 'Invalid email format' })
   @ApiResponse({ status: 404, description: 'Email not found' })
-  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDTO) {
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDTO,
+    @Res() res: Response,
+  ) {
     try {
       const forgotPassword =
         await this.authenticationService.forgotPassword(forgotPasswordDto);
-      return Response(false, 'Email sent successfully.', forgotPassword);
+      return successResponse(res, 'Email sent successfully', forgotPassword);
     } catch (error) {
-      return Response(false, 'Failed to forgot password.', error.message);
+      return errorResponse(res, error.status || 400, error.message);
     }
   }
 
@@ -236,13 +214,16 @@ export class AuthenticationController {
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 401, description: 'Invalid or expired reset token' })
-  async resetPassword(@Body() resetPasswordDto: ResetPasswordDTO) {
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDTO,
+    @Res() res: Response,
+  ) {
     try {
       const resetPassword =
         await this.authenticationService.resetPassword(resetPasswordDto);
-      return Response(false, 'Password reset successfully.', resetPassword);
+      return successResponse(res, 'Password reset successfully', resetPassword);
     } catch (error) {
-      return Response(false, 'Failed to reset password.', error.message);
+      return errorResponse(res, error.status || 401, error.message);
     }
   }
 }

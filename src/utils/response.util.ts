@@ -18,6 +18,10 @@ export const successResponse = (
 };
 
 // Error Response
-const errorResponse = (res: Response, statusCode: number, error: string) => {
+export const errorResponse = (
+  res: Response,
+  statusCode: number,
+  error: string,
+) => {
   res.status(statusCode).json({ success: false, error });
 };
