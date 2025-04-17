@@ -44,6 +44,7 @@ async function bootstrap() {
   // Using validation pipe for input validation
   app.useGlobalPipes(new ValidationPipe());
 
+  // changes
   // Enable CORS
   app.enableCors();
 
