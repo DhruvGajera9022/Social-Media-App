@@ -126,10 +126,6 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
 ## Environment Setup
 
 Create a `.env` file in the root directory with the following variables:
@@ -145,6 +141,8 @@ DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
 # Authentication
 JWT_SECRET=your-secret-key
 JWT_EXPIRATION=1d
+JWT_REFRESH_SECRET=your-refresh-secret-key
+JWT_REFRESH_EXPIRATION=7d
 
 # OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -164,43 +162,115 @@ SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=your-email@example.com
 SMTP_PASSWORD=your-email-password
+FRONTEND_URL=http://localhost:3001
 ```
 
-## Deployment
+## Technology Stack
 
-### Docker Deployment
+### Core Framework
+- **NestJS** (v11.0.1) - Progressive Node.js framework
+- **TypeScript** (v5.7.3) - Typed JavaScript
 
-1. Build the Docker image:
-```bash
-$ docker build -t social-media-backend .
+### Database
+- **PostgreSQL** - Primary database
+- **Prisma ORM** (v6.5.0) - Next-generation ORM
+
+### Authentication
+- **@nestjs/jwt** (v11.0.0) - JWT implementation
+- **@nestjs/passport** (v11.0.5) - Authentication middleware
+- **bcrypt** (v5.1.1) - Password hashing
+- **passport-jwt** (v4.0.1) - JWT strategy
+- **passport-google-oauth20** (v2.0.0) - Google OAuth
+- **passport-facebook** (v3.0.0) - Facebook OAuth
+- **passport-twitter** (v1.0.4) - Twitter OAuth
+
+### Security
+- **otplib** (v12.0.1) - Two-factor authentication
+- **qrcode** (v1.5.4) - QR code generation for 2FA
+
+### File Storage
+- **cloudinary** (v2.6.0) - Cloud-based image and video management
+- **multer** (v1.4.5-lts.1) - File upload handling
+
+### Email
+- **nodemailer** (v6.10.0) - Email sending
+
+### Validation & Transformation
+- **class-validator** (v0.14.1) - Validation decorators
+- **class-transformer** (v0.5.1) - Object transformation
+
+### Logging
+- **winston** (v3.17.0) - Logging library
+- **nest-winston** (v1.10.2) - Winston integration for NestJS
+
+### API Documentation
+- **@nestjs/swagger** (v11.0.7) - OpenAPI specification
+
+## API Endpoints
+
+### Authentication
+
+```
+POST /auth/register           - Register a new user
+POST /auth/login              - Authenticate user and generate tokens
+POST /auth/2fa/authenticate   - Authenticate with 2FA code
+GET  /auth/google             - Initiate Google OAuth login
+GET  /auth/google/callback    - Google OAuth callback
+POST /auth/refresh            - Refresh access token
+PATCH /auth/change-password   - Change user password (protected)
+POST /auth/forgot-password    - Request password reset
+PATCH /auth/reset-password    - Reset password with token
 ```
 
-2. Run the container:
-```bash
-$ docker run -p 3000:3000 --env-file .env social-media-backend
+### Posts
+
+```
+GET  /post                    - Get all posts
+GET  /post/bookmarks          - Get bookmarked posts (protected)
+GET  /post/:id/comment        - Get comments for a post
+GET  /post/:id                - Get post by ID (protected)
+POST /post                    - Create new post (protected)
+PATCH /post/:id               - Edit post (protected)
+PATCH /post/:id/pin           - Pin/unpin post (protected)
+PATCH /post/:id/like          - Like/unlike post (protected)
+DELETE /post/:id              - Delete post (protected)
+POST /post/:id/comment        - Comment on post (protected)
+PATCH /post/:id/bookmark      - Bookmark/unbookmark post (protected)
 ```
 
-### Traditional Deployment
+### Profile
 
-1. Build the application:
-```bash
-$ npm run build
+```
+GET  /profile                 - Get user profile (protected)
+GET  /profile/:id             - Get profile by user ID
+PATCH /profile                - Update profile (protected)
+POST /profile/2fa/generate    - Generate 2FA secret (protected)
+POST /profile/2fa/turn-on     - Enable 2FA (protected)
+POST /profile/2fa/turn-off    - Disable 2FA (protected)
+POST /profile/upload-avatar   - Upload profile avatar (protected)
 ```
 
-2. Start the production server:
-```bash
-$ npm run start:prod
+### Users
+
+```
+GET  /users                   - Get all users (admin only)
+GET  /users/:id               - Get user by ID (admin only)
+PATCH /users/:id/role         - Update user role (admin only)
+DELETE /users/:id             - Delete user (admin only)
+POST /users/follow/:id        - Follow user (protected)
+DELETE /users/unfollow/:id    - Unfollow user (protected)
+GET  /users/followers         - Get followers (protected)
+GET  /users/following         - Get following users (protected)
 ```
 
-### CI/CD Pipeline
+### Roles
 
-This project includes GitHub Actions workflows for:
-- Automated testing
-- Code quality checks
-- Docker image builds
-- Automated deployments
-
-Check `.github/workflows` for detailed configurations.
+```
+GET  /roles                   - Get all roles (admin only)
+POST /roles                   - Create new role (admin only)
+PATCH /roles/:id              - Update role (admin only)
+DELETE /roles/:id             - Delete role (admin only)
+```
 
 ## Development Guidelines
 
