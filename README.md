@@ -24,25 +24,93 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+A feature-rich social media backend built with NestJS, featuring authentication, user management, posts, profiles, and more.
 
-## Project setup
+## Features
+
+- 🔐 **Authentication**
+  - JWT-based authentication
+  - OAuth support (Google, Facebook, Twitter)
+  - Two-Factor Authentication (2FA) with OTP
+  - Password reset and email verification
+
+- 👤 **User Management**
+  - Role-based access control
+  - Profile management
+  - User search and following system
+
+- 📝 **Content Management**
+  - Post creation and management
+  - Comments and reactions
+  - File uploads with Cloudinary integration
+
+- 🛠 **Technical Features**
+  - Prisma ORM for database management
+  - Winston for logging
+  - Email functionality with Nodemailer
+  - API documentation with Swagger
+  - Comprehensive testing setup with Jest
+
+## Project Setup
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+- PostgreSQL database
+
+### Installation
 
 ```bash
+# Install dependencies
 $ npm install
+
+# Set up environment variables
+$ cp .env.example .env
+# Update .env with your configuration
+
+# Run database migrations
+$ npx prisma migrate dev
+
+# Seed the database (if needed)
+$ npm run seed
 ```
 
-## Compile and run the project
+## Running the Application
 
 ```bash
-# development
+# Development mode
 $ npm run start
 
-# watch mode
-$ npm run start:dev
+# Watch mode (recommended for development)
+$ npm run dev
 
-# production mode
+# Production mode
 $ npm run start:prod
+```
+
+## API Documentation
+
+Once the application is running, you can access the Swagger API documentation at:
+
+```
+http://localhost:3000/api/docs
+```
+
+## Project Structure
+
+```
+src/
+├── common/         # Shared resources (decorators, filters, guards)
+├── config/         # Configuration files
+├── dto/            # Data Transfer Objects
+├── modules/        # Feature modules
+│   ├── auth/       # Authentication module
+│   ├── user/       # User management
+│   ├── post/       # Post management
+│   └── profile/    # Profile management
+├── prisma/         # Database schema and migrations
+└── main.ts         # Application entry point
 ```
 
 ## Run tests
