@@ -130,27 +130,163 @@ $ npm run test:cov
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Environment Setup
 
-```bash
-$ npm install -g mau
-$ mau deploy
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Application
+PORT=3000
+NODE_ENV=development
+
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+
+# Authentication
+JWT_SECRET=your-secret-key
+JWT_EXPIRATION=1d
+
+# OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+FACEBOOK_APP_ID=your-facebook-app-id
+FACEBOOK_APP_SECRET=your-facebook-app-secret
+TWITTER_CONSUMER_KEY=your-twitter-consumer-key
+TWITTER_CONSUMER_SECRET=your-twitter-consumer-secret
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Email
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-email@example.com
+SMTP_PASSWORD=your-email-password
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Deployment
+
+### Docker Deployment
+
+1. Build the Docker image:
+```bash
+$ docker build -t social-media-backend .
+```
+
+2. Run the container:
+```bash
+$ docker run -p 3000:3000 --env-file .env social-media-backend
+```
+
+### Traditional Deployment
+
+1. Build the application:
+```bash
+$ npm run build
+```
+
+2. Start the production server:
+```bash
+$ npm run start:prod
+```
+
+### CI/CD Pipeline
+
+This project includes GitHub Actions workflows for:
+- Automated testing
+- Code quality checks
+- Docker image builds
+- Automated deployments
+
+Check `.github/workflows` for detailed configurations.
+
+## Development Guidelines
+
+### Branch Strategy
+
+The project follows a feature-branch workflow:
+- `master` - Production-ready code
+- `auth-branch` - Authentication features
+- `post-branch` - Post management features
+- `profile-branch` - User profile features
+- `roles-branch` - Role management
+- `users-branch` - User management
+
+### Code Style
+
+- Follow the `.eslintrc` and `.prettierrc` configurations
+- Run linting before commits:
+```bash
+$ npm run lint
+```
+
+### Testing Standards
+
+- Write unit tests for all new features
+- Maintain minimum 80% code coverage
+- Run tests before pushing:
+```bash
+$ npm run test
+$ npm run test:e2e
+```
+
+## Performance Optimization
+
+- Database indexing on frequently queried fields
+- Caching implemented for frequently accessed data
+- Rate limiting on API endpoints
+- Pagination for list endpoints
+
+## Security Measures
+
+- JWT token rotation
+- Rate limiting
+- CORS configuration
+- Request validation
+- SQL injection protection
+- XSS prevention
 
 ## Resources
 
-Check out a few resources that may come in handy when working with NestJS:
+Project-specific resources:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- [API Documentation](http://localhost:3000/api/docs) - Interactive API documentation
+- [Prisma Documentation](https://www.prisma.io/docs) - Database ORM
+- [Jest Documentation](https://jestjs.io/docs/getting-started) - Testing framework
+- [Cloudinary Documentation](https://cloudinary.com/documentation) - File upload service
+
+### Monitoring and Logging
+
+- Winston logging configured for:
+  - Error tracking
+  - API request logging
+  - Performance monitoring
+- Log levels: error, warn, info, debug
+- Logs stored in: `/logs` directory
+
+### Troubleshooting
+
+Common issues and solutions:
+
+1. Database Connection Issues
+```bash
+# Check database status
+$ npx prisma db push --preview-feature
+
+# Reset database
+$ npx prisma migrate reset
+```
+
+2. Authentication Issues
+```bash
+# Clear token cache
+$ npm run clear:cache
+
+# Check OAuth configurations
+$ npm run check:oauth
+```
 
 ## Support
 
