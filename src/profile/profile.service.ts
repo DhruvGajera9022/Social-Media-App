@@ -440,6 +440,12 @@ export class ProfileService {
 
   // Followers List
   async followersList(userId: number) {
+    const cacheKey = cacheKeys.followersList(userId);
+
+    // Check cache first
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
     try {
       await this.getUserData(userId);
 
@@ -476,10 +482,11 @@ export class ProfileService {
         profile_picture: f.follower.profile_picture,
       }));
 
-      return {
-        followers: formattedFollowers,
-        total: totalCount,
-      };
+      const result = { followers: formattedFollowers, total: totalCount };
+
+      await this.cacheManager.set(cacheKey, JSON.stringify(result), 300); // Cache for 5 min
+
+      return result;
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve followers list',
@@ -490,7 +497,19 @@ export class ProfileService {
 
   // Following List
   async followingList(userId: number) {
+    const cacheKeyFollowing = cacheKeys.followingList(userId);
+
+    // Check cache first
     try {
+      const cached = await this.cacheManager.get(cacheKeyFollowing);
+      if (cached && Object.keys(cached).length > 0) {
+        console.log('Cache hit for following list:', userId);
+        return cached;
+      }
+
+      console.log('Cache miss for following list:', userId);
+
+      // Get user data to ensure the user exists
       await this.getUserData(userId);
 
       // Get total count
@@ -518,11 +537,18 @@ export class ProfileService {
         profile_picture: f.following.profile_picture,
       }));
 
-      return {
+      const result = {
         following: formattedFollowing,
         total: totalCount,
       };
+
+      // Ensure cache setting is working properly
+      await this.cacheManager.set(cacheKeyFollowing, result, 300); // Cache for 5 min
+      console.log('Cached following list for user:', userId);
+
+      return result;
     } catch (error) {
+      console.error('Error in followingList:', error);
       throw new InternalServerErrorException(
         'Failed to retrieve following list',
         error.message,
