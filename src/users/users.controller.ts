@@ -85,11 +85,6 @@ export class UsersController {
   async userById(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
     try {
       const user = await this.usersService.userById(id);
-
-      if (!user) {
-        throw new NotFoundException(`User with ID ${id} not found.`);
-      }
-
       return successResponse(res, 'User found successfully.', user);
     } catch (error) {
       return error(res, 401, error.message);
