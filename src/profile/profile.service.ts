@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -15,13 +16,18 @@ import {
   uploadToCloudinary,
 } from 'src/utils/cloudinary.util';
 import { Prisma } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
 import * as QRCode from 'qrcode';
 import { authenticator } from 'otplib';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { cacheKeys } from 'src/utils/cacheKeys.util';
 
 @Injectable()
 export class ProfileService {
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
@@ -65,6 +71,17 @@ export class ProfileService {
 
   // Get Profile with posts and follower counts
   async getProfile(userId: number) {
+    const profileCacheKey = cacheKeys.userProfile(userId);
+    const postsCacheKey = cacheKeys.userPosts(userId);
+
+    // Try to get profile data from cache
+    const cachedProfile = await this.cacheManager.get(profileCacheKey);
+    const cachedPosts = await this.cacheManager.get(postsCacheKey);
+
+    if (cachedProfile && cachedPosts) {
+      return { ...cachedProfile, posts: cachedPosts };
+    }
+
     try {
       const user = await this.prisma.users.findUnique({
         where: { id: userId, is_active: true },
@@ -84,9 +101,22 @@ export class ProfileService {
         },
         omit: { password: true },
       });
+
       if (!user) {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
+
+      // Extract posts to store separately
+      const { posts, ...profileData } = user;
+
+      // Compress data before storing (optional)
+      const compressedProfile = JSON.stringify(profileData);
+      const compressedPosts = JSON.stringify(posts);
+
+      // Store data in redis with different TTLs
+      await this.cacheManager.set(profileCacheKey, compressedProfile, 600); // Profile data: 10 min
+      await this.cacheManager.set(postsCacheKey, compressedPosts, 300); // Posts: 5 min
+
       return user;
     } catch (error) {
       throw new InternalServerErrorException(
