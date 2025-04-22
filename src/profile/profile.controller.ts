@@ -629,7 +629,7 @@ export class ProfileController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfileById(@Param('id') id: string, @Res() res: Response) {
     try {
-      const profile = await this.profileService.getProfileById(+id);
+      const profile = await this.profileService.getProfile(+id);
       return successResponse(res, 'Profile fetched successfully', profile);
     } catch (error) {
       return errorResponse(res, 400, 'Failed to fetch profile data by id.');

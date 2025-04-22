@@ -126,48 +126,16 @@ export class ProfileService {
     }
   }
 
-  // Get profile by id
-  async getProfileById(userId: number) {
-    try {
-      const user = await this.prisma.users.findUnique({
-        where: { id: userId, is_active: true },
-        include: {
-          _count: { select: { followers: true, following: true } },
-          posts: {
-            orderBy: [{ pinned: 'desc' }, { created_at: 'desc' }],
-            select: {
-              id: true,
-              title: true,
-              content: true,
-              created_at: true,
-              media_url: true,
-              pinned: true,
-            },
-          },
-        },
-        omit: { password: true },
-      });
-      if (!user) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
-      }
-      return user;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to retrieve profile data',
-        error.message,
-      );
-    }
-  }
-
   // Edit Profile
   async editProfile(userId: number, editProfileDto: EditProfileDTO) {
+    const profileCacheKey = cacheKeys.userProfile(userId);
     try {
       await this.getUserData(userId); // Verify user exists and is active
 
       const { username, firstName, lastName, email, is_private } =
         editProfileDto;
 
-      return await this.prisma.users.update({
+      const updatedUser = await this.prisma.users.update({
         where: { id: userId },
         data: {
           username,
@@ -183,8 +151,18 @@ export class ProfileService {
           lastName: true,
           email: true,
           is_private: true,
+          _count: { select: { followers: true, following: true } },
         },
       });
+
+      // Update cache after profile change (exclude posts)
+      await this.cacheManager.set(
+        profileCacheKey,
+        JSON.stringify(updatedUser),
+        600, // 10 minutes
+      );
+
+      return updatedUser;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -199,6 +177,7 @@ export class ProfileService {
   // Edit Profile Picture
   async editProfilePicture(userId: number, file?: Express.Multer.File) {
     let localFilePath = file?.path;
+    const profileCacheKey = cacheKeys.userProfile(userId);
     try {
       const user = await this.getUserData(userId);
       let file_url = user.profile_picture; // Keep existing picture if no new upload
@@ -215,12 +194,29 @@ export class ProfileService {
         }
       }
 
-      await this.prisma.users.update({
+      const updatedUser = this.prisma.users.update({
         where: { id: user.id },
         data: {
           profile_picture: file_url,
         },
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          is_private: true,
+          profile_picture: true,
+          _count: { select: { followers: true, following: true } },
+        },
       });
+
+      // Refresh Redis cache
+      await this.cacheManager.set(
+        profileCacheKey,
+        JSON.stringify(updatedUser),
+        600,
+      );
       return { message: 'Profile picture updated successfully' };
     } catch (error) {
       throw new InternalServerErrorException(
@@ -239,6 +235,8 @@ export class ProfileService {
 
   // Remove Profile Picture
   async removeProfilePicture(userId: number) {
+    const profileCacheKey = cacheKeys.userProfile(userId);
+
     try {
       const user = await this.getUserData(userId);
 
@@ -248,11 +246,27 @@ export class ProfileService {
 
       await deleteFromCloudinary(user.profile_picture);
 
-      await this.prisma.users.update({
+      const updatedUser = await this.prisma.users.update({
         where: { id: user.id },
         data: { profile_picture: '' },
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          is_private: true,
+          profile_picture: true,
+          _count: { select: { followers: true, following: true } },
+        },
       });
 
+      // Refresh Redis cache
+      await this.cacheManager.set(
+        profileCacheKey,
+        JSON.stringify(updatedUser),
+        600,
+      );
       return { message: 'Profile picture removed successfully' };
     } catch (error) {
       throw new InternalServerErrorException(
