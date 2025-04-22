@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -15,18 +16,31 @@ import {
   uploadToCloudinary,
 } from 'src/utils/cloudinary.util';
 import { Prisma } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
 import * as QRCode from 'qrcode';
 import { authenticator } from 'otplib';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { cacheKeys } from 'src/utils/cacheKeys.util';
 
 @Injectable()
 export class ProfileService {
-  constructor(private prisma: PrismaService) {
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private prisma: PrismaService,
+  ) {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
+  }
+
+  async set() {
+    await this.cacheManager.set('TEST', 'Dhruv');
+  }
+
+  async get() {
+    return this.cacheManager.get('TEST');
   }
 
   // Get User By Id
@@ -66,39 +80,12 @@ export class ProfileService {
   // Get Profile with posts and follower counts
   async getProfile(userId: number) {
     try {
-      const user = await this.prisma.users.findUnique({
-        where: { id: userId, is_active: true },
-        include: {
-          _count: { select: { followers: true, following: true } },
-          posts: {
-            orderBy: [{ pinned: 'desc' }, { created_at: 'desc' }],
-            select: {
-              id: true,
-              title: true,
-              content: true,
-              created_at: true,
-              media_url: true,
-              pinned: true,
-            },
-          },
-        },
-        omit: { password: true },
-      });
-      if (!user) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
+      const cacheKey = cacheKeys.userProfileWithPosts(userId);
+      const cachedProfile = await this.cacheManager.get(cacheKey);
+      if (cachedProfile) {
+        return cachedProfile;
       }
-      return user;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to retrieve profile data',
-        error.message,
-      );
-    }
-  }
 
-  // Get profile by id
-  async getProfileById(userId: number) {
-    try {
       const user = await this.prisma.users.findUnique({
         where: { id: userId, is_active: true },
         include: {
@@ -120,6 +107,8 @@ export class ProfileService {
       if (!user) {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
+
+      this.cacheManager.set(cacheKey, user);
       return user;
     } catch (error) {
       throw new InternalServerErrorException(
@@ -131,13 +120,14 @@ export class ProfileService {
 
   // Edit Profile
   async editProfile(userId: number, editProfileDto: EditProfileDTO) {
+    const profileCacheKey = cacheKeys.userProfileWithPosts(userId);
     try {
       await this.getUserData(userId); // Verify user exists and is active
 
       const { username, firstName, lastName, email, is_private } =
         editProfileDto;
 
-      return await this.prisma.users.update({
+      const updatedUser = await this.prisma.users.update({
         where: { id: userId },
         data: {
           username,
@@ -153,8 +143,14 @@ export class ProfileService {
           lastName: true,
           email: true,
           is_private: true,
+          _count: { select: { followers: true, following: true } },
         },
       });
+
+      // Update cache after profile change (exclude posts)
+      this.cacheManager.set(profileCacheKey, updatedUser);
+
+      return updatedUser;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -169,6 +165,7 @@ export class ProfileService {
   // Edit Profile Picture
   async editProfilePicture(userId: number, file?: Express.Multer.File) {
     let localFilePath = file?.path;
+    const profileCacheKey = cacheKeys.userProfileWithPosts(userId);
     try {
       const user = await this.getUserData(userId);
       let file_url = user.profile_picture; // Keep existing picture if no new upload
@@ -185,12 +182,25 @@ export class ProfileService {
         }
       }
 
-      await this.prisma.users.update({
+      const updatedUser = this.prisma.users.update({
         where: { id: user.id },
         data: {
           profile_picture: file_url,
         },
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          is_private: true,
+          profile_picture: true,
+          _count: { select: { followers: true, following: true } },
+        },
       });
+
+      // Refresh Redis cache
+      this.cacheManager.set(profileCacheKey, updatedUser);
       return { message: 'Profile picture updated successfully' };
     } catch (error) {
       throw new InternalServerErrorException(
@@ -209,6 +219,8 @@ export class ProfileService {
 
   // Remove Profile Picture
   async removeProfilePicture(userId: number) {
+    const profileCacheKey = cacheKeys.userProfileWithPosts(userId);
+
     try {
       const user = await this.getUserData(userId);
 
@@ -218,11 +230,23 @@ export class ProfileService {
 
       await deleteFromCloudinary(user.profile_picture);
 
-      await this.prisma.users.update({
+      const updatedUser = await this.prisma.users.update({
         where: { id: user.id },
         data: { profile_picture: '' },
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          is_private: true,
+          profile_picture: true,
+          _count: { select: { followers: true, following: true } },
+        },
       });
 
+      // Refresh Redis cache
+      this.cacheManager.set(profileCacheKey, updatedUser);
       return { message: 'Profile picture removed successfully' };
     } catch (error) {
       throw new InternalServerErrorException(
@@ -396,7 +420,13 @@ export class ProfileService {
 
   // Followers List
   async followersList(userId: number) {
+    const cacheKey = cacheKeys.followersList(userId);
+
     try {
+      // Check cache first
+      const cached = await this.cacheManager.get(cacheKey);
+      if (cached) return cached;
+
       await this.getUserData(userId);
 
       // Get blocked user IDs
@@ -432,10 +462,11 @@ export class ProfileService {
         profile_picture: f.follower.profile_picture,
       }));
 
-      return {
-        followers: formattedFollowers,
-        total: totalCount,
-      };
+      const result = { followers: formattedFollowers, total: totalCount };
+
+      this.cacheManager.set(cacheKey, result);
+
+      return result;
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve followers list',
@@ -446,7 +477,14 @@ export class ProfileService {
 
   // Following List
   async followingList(userId: number) {
+    const cacheKeyFollowing = cacheKeys.followingList(userId);
+
+    // Check cache first
     try {
+      const cached = await this.cacheManager.get(cacheKeyFollowing);
+      if (cached) return cached;
+
+      // Get user data to ensure the user exists
       await this.getUserData(userId);
 
       // Get total count
@@ -474,11 +512,16 @@ export class ProfileService {
         profile_picture: f.following.profile_picture,
       }));
 
-      return {
+      const result = {
         following: formattedFollowing,
         total: totalCount,
       };
+
+      this.cacheManager.set(cacheKeyFollowing, result);
+
+      return result;
     } catch (error) {
+      console.error('Error in followingList:', error);
       throw new InternalServerErrorException(
         'Failed to retrieve following list',
         error.message,
@@ -488,7 +531,11 @@ export class ProfileService {
 
   // Get Follow Requests
   async getFollowRequests(userId: number) {
+    const cacheKeyFollowRequest = cacheKeys.followRequests(userId);
     try {
+      const cache = await this.cacheManager.get(cacheKeyFollowRequest);
+      if (cache) return cache;
+
       await this.getUserData(userId);
 
       // Get total count for pagination info
@@ -519,10 +566,12 @@ export class ProfileService {
         },
       }));
 
-      return {
+      const result = {
         requests: formattedRequests,
         total: totalCount,
       };
+      this.cacheManager.set(cacheKeyFollowRequest, result);
+      return result;
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve follow requests',
@@ -626,7 +675,11 @@ export class ProfileService {
 
   // Get Blocked Users List
   async getBlockedUsers(userId: number) {
+    const cacheKeyBlockedUser = cacheKeys.blockedList(userId);
     try {
+      const cache = await this.cacheManager.get(cacheKeyBlockedUser);
+      if (cache) return cache;
+
       await this.getUserData(userId);
 
       // Get total count
@@ -654,10 +707,13 @@ export class ProfileService {
         profile_picture: b.blocked.profile_picture,
       }));
 
-      return {
+      const result = {
         blockedUsers: formattedBlockedUsers,
         total: totalCount,
       };
+
+      this.cacheManager.set(cacheKeyBlockedUser, result);
+      return result;
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve blocked users list',
@@ -668,7 +724,11 @@ export class ProfileService {
 
   // Mutual Followers
   async getMutualFollowers(userId: number, targetId: number) {
+    const cacheKeyMutualFriend = cacheKeys.mutualFriendsList(userId);
     try {
+      const cache = await this.cacheManager.get(cacheKeyMutualFriend);
+      if (cache) return cache;
+
       await this.getUserData(userId);
       await this.getUserData(targetId);
 
@@ -700,7 +760,10 @@ export class ProfileService {
         },
       });
 
-      return { mutualFollowers, totalCount };
+      const result = { mutualFollowers, totalCount };
+
+      this.cacheManager.set(cacheKeyMutualFriend, result);
+      return result;
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve mutual followers',
