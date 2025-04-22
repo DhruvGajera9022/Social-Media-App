@@ -54,7 +54,7 @@ export class ProfileController {
   }
 
   // Get user profile by ID
-  @Get(':id')
+  @Get(':id/profile')
   @ApiOperation({ summary: 'Get user profile by id' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
