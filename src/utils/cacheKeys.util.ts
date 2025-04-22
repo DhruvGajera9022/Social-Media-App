@@ -12,4 +12,6 @@ export const cacheKeys = {
   followersList: (userId: number) => `social:user:${userId}:followers`,
   followingList: (userId: number) => `social:user:${userId}:following`,
   followRequests: (userId: number) => `social:user:${userId}:follow-requests`,
+  blockedList: (userId: number) => `social:user:${userId}:blocked`,
+  mutualFriendsList: (userId: number) => `social:user:${userId}:mutual-friend`,
 };

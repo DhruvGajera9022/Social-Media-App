@@ -19,6 +19,7 @@ export class AppService {
 
     if (cacheData) {
       this.logger.info(`Cache hit for key: ${cacheKey}`);
+      this.logger.info(cacheData);
       return cacheData;
     }
 

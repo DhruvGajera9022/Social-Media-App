@@ -25,14 +25,22 @@ import { cacheKeys } from 'src/utils/cacheKeys.util';
 @Injectable()
 export class ProfileService {
   constructor(
-    private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private prisma: PrismaService,
   ) {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
+  }
+
+  async set() {
+    await this.cacheManager.set('TEST', 'Dhruv');
+  }
+
+  async get() {
+    return this.cacheManager.get('TEST');
   }
 
   // Get User By Id
@@ -71,18 +79,13 @@ export class ProfileService {
 
   // Get Profile with posts and follower counts
   async getProfile(userId: number) {
-    const profileCacheKey = cacheKeys.userProfile(userId);
-    const postsCacheKey = cacheKeys.userPosts(userId);
-
-    // Try to get profile data from cache
-    const cachedProfile = await this.cacheManager.get(profileCacheKey);
-    const cachedPosts = await this.cacheManager.get(postsCacheKey);
-
-    if (cachedProfile && cachedPosts) {
-      return { ...cachedProfile, posts: cachedPosts };
-    }
-
     try {
+      const cacheKey = cacheKeys.userProfileWithPosts(userId);
+      const cachedProfile = await this.cacheManager.get(cacheKey);
+      if (cachedProfile) {
+        return cachedProfile;
+      }
+
       const user = await this.prisma.users.findUnique({
         where: { id: userId, is_active: true },
         include: {
@@ -101,22 +104,11 @@ export class ProfileService {
         },
         omit: { password: true },
       });
-
       if (!user) {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      // Extract posts to store separately
-      const { posts, ...profileData } = user;
-
-      // Compress data before storing (optional)
-      const compressedProfile = JSON.stringify(profileData);
-      const compressedPosts = JSON.stringify(posts);
-
-      // Store data in redis with different TTLs
-      await this.cacheManager.set(profileCacheKey, compressedProfile, 600); // Profile data: 10 min
-      await this.cacheManager.set(postsCacheKey, compressedPosts, 300); // Posts: 5 min
-
+      this.cacheManager.set(cacheKey, user);
       return user;
     } catch (error) {
       throw new InternalServerErrorException(
@@ -128,7 +120,7 @@ export class ProfileService {
 
   // Edit Profile
   async editProfile(userId: number, editProfileDto: EditProfileDTO) {
-    const profileCacheKey = cacheKeys.userProfile(userId);
+    const profileCacheKey = cacheKeys.userProfileWithPosts(userId);
     try {
       await this.getUserData(userId); // Verify user exists and is active
 
@@ -156,11 +148,7 @@ export class ProfileService {
       });
 
       // Update cache after profile change (exclude posts)
-      await this.cacheManager.set(
-        profileCacheKey,
-        JSON.stringify(updatedUser),
-        600, // 10 minutes
-      );
+      this.cacheManager.set(profileCacheKey, updatedUser);
 
       return updatedUser;
     } catch (error) {
@@ -177,7 +165,7 @@ export class ProfileService {
   // Edit Profile Picture
   async editProfilePicture(userId: number, file?: Express.Multer.File) {
     let localFilePath = file?.path;
-    const profileCacheKey = cacheKeys.userProfile(userId);
+    const profileCacheKey = cacheKeys.userProfileWithPosts(userId);
     try {
       const user = await this.getUserData(userId);
       let file_url = user.profile_picture; // Keep existing picture if no new upload
@@ -212,11 +200,7 @@ export class ProfileService {
       });
 
       // Refresh Redis cache
-      await this.cacheManager.set(
-        profileCacheKey,
-        JSON.stringify(updatedUser),
-        600,
-      );
+      this.cacheManager.set(profileCacheKey, updatedUser);
       return { message: 'Profile picture updated successfully' };
     } catch (error) {
       throw new InternalServerErrorException(
@@ -235,7 +219,7 @@ export class ProfileService {
 
   // Remove Profile Picture
   async removeProfilePicture(userId: number) {
-    const profileCacheKey = cacheKeys.userProfile(userId);
+    const profileCacheKey = cacheKeys.userProfileWithPosts(userId);
 
     try {
       const user = await this.getUserData(userId);
@@ -262,11 +246,7 @@ export class ProfileService {
       });
 
       // Refresh Redis cache
-      await this.cacheManager.set(
-        profileCacheKey,
-        JSON.stringify(updatedUser),
-        600,
-      );
+      this.cacheManager.set(profileCacheKey, updatedUser);
       return { message: 'Profile picture removed successfully' };
     } catch (error) {
       throw new InternalServerErrorException(
@@ -442,11 +422,11 @@ export class ProfileService {
   async followersList(userId: number) {
     const cacheKey = cacheKeys.followersList(userId);
 
-    // Check cache first
-    const cached = await this.cacheManager.get(cacheKey);
-    if (cached) return cached;
-
     try {
+      // Check cache first
+      const cached = await this.cacheManager.get(cacheKey);
+      if (cached) return cached;
+
       await this.getUserData(userId);
 
       // Get blocked user IDs
@@ -484,7 +464,7 @@ export class ProfileService {
 
       const result = { followers: formattedFollowers, total: totalCount };
 
-      await this.cacheManager.set(cacheKey, JSON.stringify(result), 300); // Cache for 5 min
+      this.cacheManager.set(cacheKey, result);
 
       return result;
     } catch (error) {
@@ -502,12 +482,7 @@ export class ProfileService {
     // Check cache first
     try {
       const cached = await this.cacheManager.get(cacheKeyFollowing);
-      if (cached && Object.keys(cached).length > 0) {
-        console.log('Cache hit for following list:', userId);
-        return cached;
-      }
-
-      console.log('Cache miss for following list:', userId);
+      if (cached) return cached;
 
       // Get user data to ensure the user exists
       await this.getUserData(userId);
@@ -542,9 +517,7 @@ export class ProfileService {
         total: totalCount,
       };
 
-      // Ensure cache setting is working properly
-      await this.cacheManager.set(cacheKeyFollowing, result, 300); // Cache for 5 min
-      console.log('Cached following list for user:', userId);
+      this.cacheManager.set(cacheKeyFollowing, result);
 
       return result;
     } catch (error) {
@@ -558,7 +531,11 @@ export class ProfileService {
 
   // Get Follow Requests
   async getFollowRequests(userId: number) {
+    const cacheKeyFollowRequest = cacheKeys.followRequests(userId);
     try {
+      const cache = await this.cacheManager.get(cacheKeyFollowRequest);
+      if (cache) return cache;
+
       await this.getUserData(userId);
 
       // Get total count for pagination info
@@ -589,10 +566,12 @@ export class ProfileService {
         },
       }));
 
-      return {
+      const result = {
         requests: formattedRequests,
         total: totalCount,
       };
+      this.cacheManager.set(cacheKeyFollowRequest, result);
+      return result;
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve follow requests',
@@ -696,7 +675,11 @@ export class ProfileService {
 
   // Get Blocked Users List
   async getBlockedUsers(userId: number) {
+    const cacheKeyBlockedUser = cacheKeys.blockedList(userId);
     try {
+      const cache = await this.cacheManager.get(cacheKeyBlockedUser);
+      if (cache) return cache;
+
       await this.getUserData(userId);
 
       // Get total count
@@ -724,10 +707,13 @@ export class ProfileService {
         profile_picture: b.blocked.profile_picture,
       }));
 
-      return {
+      const result = {
         blockedUsers: formattedBlockedUsers,
         total: totalCount,
       };
+
+      this.cacheManager.set(cacheKeyBlockedUser, result);
+      return result;
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve blocked users list',
@@ -738,7 +724,11 @@ export class ProfileService {
 
   // Mutual Followers
   async getMutualFollowers(userId: number, targetId: number) {
+    const cacheKeyMutualFriend = cacheKeys.mutualFriendsList(userId);
     try {
+      const cache = await this.cacheManager.get(cacheKeyMutualFriend);
+      if (cache) return cache;
+
       await this.getUserData(userId);
       await this.getUserData(targetId);
 
@@ -770,7 +760,10 @@ export class ProfileService {
         },
       });
 
-      return { mutualFollowers, totalCount };
+      const result = { mutualFollowers, totalCount };
+
+      this.cacheManager.set(cacheKeyMutualFriend, result);
+      return result;
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve mutual followers',
