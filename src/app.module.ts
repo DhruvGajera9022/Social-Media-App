@@ -14,6 +14,7 @@ import { PostModule } from './post/post.module';
 import { RolesModule } from './roles/roles.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { RedisOptions } from './config/redis.config';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { RedisOptions } from './config/redis.config';
         }),
       ],
     }),
+    ConfigModule.forRoot({ isGlobal: true }),
     CacheModule.registerAsync(RedisOptions),
     AuthenticationModule,
     PrismaModule,
