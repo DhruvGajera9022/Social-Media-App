@@ -12,6 +12,8 @@ import { UsersModule } from './users/users.module';
 import { ProfileModule } from './profile/profile.module';
 import { PostModule } from './post/post.module';
 import { RolesModule } from './roles/roles.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { RedisOptions } from './config/redis.config';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { RolesModule } from './roles/roles.module';
         }),
       ],
     }),
+    CacheModule.registerAsync(RedisOptions),
     AuthenticationModule,
     PrismaModule,
     UsersModule,
