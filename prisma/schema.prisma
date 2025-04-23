@@ -41,6 +41,8 @@ model Users {
   blocking               BlockList[]      @relation("BlockerRelation")
   Comments               Comments[]
   Bookmarks              Bookmarks[]
+  notifications          Notifications[]  @relation("UserNotifications")
+  notificationsTriggered Notifications[]  @relation("ActorNotifications")
 }
 
 model RefreshToken {
@@ -148,4 +150,24 @@ model Bookmarks {
 
   user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
   post Posts @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  FOLLOW_REQUEST
+}
+
+model Notifications {
+  id         Int              @id @default(autoincrement())
+  userId     Int // User who will receive the notification
+  actorId    Int // User who performed the action
+  type       NotificationType @default(FOLLOW_REQUEST)
+  entityId   Int // ID of the related entity (post, comment, etc.)
+  isRead     Boolean          @default(false)
+  created_at DateTime         @default(now())
+
+  user  Users @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor Users @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
 }
