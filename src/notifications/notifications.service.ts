@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -42,5 +46,30 @@ export class NotificationsService {
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
+  }
+
+  async markAsRead(notificationId: number) {
+    try {
+      const notification = await this.prisma.notifications.findUnique({
+        where: { id: notificationId },
+      });
+      if (!notification) {
+        throw new NotFoundException('Notification not found');
+      }
+
+      return this.prisma.notifications.update({
+        where: { id: notificationId },
+        data: { isRead: true },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async markAllAsRead(userId: number) {
+    return this.prisma.notifications.updateMany({
+      where: { userId },
+      data: { isRead: true },
+    });
   }
 }

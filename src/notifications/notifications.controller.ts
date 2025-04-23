@@ -1,4 +1,13 @@
-import { Controller, Get, Inject, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
@@ -44,6 +53,34 @@ export class NotificationsController {
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to fetch unread-count');
+    }
+  }
+
+  @Post(':id/mark-read')
+  async markAsRead(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const unreadCount = await this.notificationsService.markAsRead(+id);
+      return successResponse(res, 'Notification marked as read', unreadCount);
+    } catch (error) {
+      this.logger.error(error.message);
+      return errorResponse(res, 400, 'Failed to mark as read');
+    }
+  }
+
+  @Post('mark-all-read')
+  async markAllAsRead(@Req() req, @Res() res: Response) {
+    try {
+      const userId = +req.user.userId;
+      const markedNotifications =
+        this.notificationsService.markAllAsRead(userId);
+      return successResponse(
+        res,
+        'All Notification marked as read',
+        markedNotifications,
+      );
+    } catch (error) {
+      this.logger.error(error.message);
+      return errorResponse(res, 400, 'Failed to mark all notification as read');
     }
   }
 }
