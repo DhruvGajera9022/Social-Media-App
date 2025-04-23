@@ -1,14 +1,16 @@
 export const cacheKeys = {
-  userProfile: (userId) => `social:user:${userId}:profile`,
-  userPosts: (userId) => `social:user:${userId}:post`,
+  userProfile: (userId: number) => `social:user:${userId}:profile`,
+  userPosts: (userId: number) => `social:user:${userId}:post`,
   userProfileWithPosts: (userId: number) => `profile:user:${userId}:with-posts`,
 
-  userSessions: (userId) => `chat:user:${userId}:sessions`,
-  chatRoomMessages: (roomId) => `chat:room:${roomId}:messages`,
+  userSessions: (userId: number) => `chat:user:${userId}:sessions`,
+  chatRoomMessages: (roomId: number) => `chat:room:${roomId}:messages`,
   posts: () => `social:posts`,
-  postLikes: (postId) => `social:post:${postId}:likes`,
-  postComments: (postId) => `social:post:${postId}:comments`,
-  notificationCount: (userId) => `chat:user:${userId}:notifications`,
+  postId: (postId: number) => `social:post:${postId}`,
+  postLikes: (postId: number) => `social:post:${postId}:likes`,
+  postComments: (postId: number) => `social:post:${postId}:comments`,
+  postBookmarks: (userId: number) => `social:post:${userId}:bookmark`,
+  notificationCount: (userId: number) => `chat:user:${userId}:notifications`,
 
   followersList: (userId: number) => `social:user:${userId}:followers`,
   followingList: (userId: number) => `social:user:${userId}:following`,

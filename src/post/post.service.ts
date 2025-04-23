@@ -85,7 +85,7 @@ export class PostService {
         },
       });
 
-      this.cacheManager.set(cachePostsKey, posts);
+      await this.cacheManager.set(cachePostsKey, posts);
 
       return posts;
     } catch (error) {
@@ -94,7 +94,13 @@ export class PostService {
   }
 
   async getPostById(postId: number, userId: number) {
+    const cachePostIdKey = cacheKeys.postId(postId);
     try {
+      const cachedPostIdData = await this.cacheManager.get(cachePostIdKey);
+      if (cachedPostIdData) {
+        return cachedPostIdData;
+      }
+
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
         include: {
@@ -148,10 +154,14 @@ export class PostService {
         where: { postId_userId: { postId, userId } },
       });
 
-      return {
+      const result = {
         ...post,
         userLiked: !!userLiked,
       };
+
+      this.cacheManager.set(cachePostIdKey, result);
+
+      return result;
     } catch (error) {
       if (
         error instanceof NotFoundException ||
@@ -175,6 +185,7 @@ export class PostService {
     createPostDto: CreatePostDTO,
     files: Express.Multer.File[],
   ) {
+    const cachePostsKey = cacheKeys.posts();
     const { title, content, status = PostEnum.PUBLISHED } = createPostDto;
 
     if (!files || files.length === 0) {
@@ -184,7 +195,7 @@ export class PostService {
     try {
       const mediaUrls = await this.uploadFilesToCloudinary(files);
 
-      return await this.prisma.posts.create({
+      const newPost = await this.prisma.posts.create({
         data: {
           title,
           content,
@@ -201,6 +212,10 @@ export class PostService {
           },
         },
       });
+
+      await this.cacheManager.del(cachePostsKey);
+
+      return newPost;
     } catch (error) {
       await this.cleanupFiles(files);
       throw new InternalServerErrorException(
@@ -241,6 +256,7 @@ export class PostService {
   }
 
   async editPost(postId: number, userId: number, editPostDto: EditPostDTO) {
+    const cachePostsKey = cacheKeys.posts();
     try {
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
@@ -255,6 +271,8 @@ export class PostService {
       }
 
       const { title, content, status, media_url } = editPostDto;
+
+      await this.cacheManager.del(cachePostsKey);
 
       return await this.prisma.posts.update({
         where: { id: postId },
@@ -285,6 +303,7 @@ export class PostService {
   }
 
   async deletePost(postId: number, userId: number) {
+    const cachePostsKey = cacheKeys.posts();
     try {
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
@@ -297,6 +316,8 @@ export class PostService {
       if (post.userId !== userId) {
         throw new ForbiddenException('You can only delete your own posts');
       }
+
+      await this.cacheManager.del(cachePostsKey);
 
       // Delete all comments, likes, and the post itself in a transaction
       return await this.prisma.$transaction(async (prisma) => {
@@ -316,6 +337,7 @@ export class PostService {
   }
 
   async pinningPost(postId: number, userId: number) {
+    const cachePostsKey = cacheKeys.posts();
     try {
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
@@ -328,6 +350,8 @@ export class PostService {
       if (post.userId !== userId) {
         throw new ForbiddenException('You can only pin your own posts');
       }
+
+      await this.cacheManager.del(cachePostsKey);
 
       return await this.prisma.posts.update({
         where: { id: postId },
@@ -345,6 +369,7 @@ export class PostService {
   }
 
   async likePost(postId: number, userId: number) {
+    const cachePostsKey = cacheKeys.posts();
     try {
       // First check if post exists
       const post = await this.prisma.posts.findUnique({
@@ -359,6 +384,8 @@ export class PostService {
       const existingLike = await this.prisma.postLikes.findUnique({
         where: { postId_userId: { postId, userId } },
       });
+
+      await this.cacheManager.del(cachePostsKey);
 
       if (existingLike) {
         // Unlike the post if already liked
@@ -398,6 +425,7 @@ export class PostService {
     userId: number,
     commentPostDto: CommentPostDTO,
   ) {
+    const cachePostsKey = cacheKeys.posts();
     try {
       await this.incrementViewCount(postId);
       // Verify post exists
@@ -417,6 +445,8 @@ export class PostService {
       if (!user) {
         throw new NotFoundException('User not found');
       }
+
+      await this.cacheManager.del(cachePostsKey);
 
       // Create comment
       return await this.prisma.comments.create({
@@ -443,7 +473,13 @@ export class PostService {
   }
 
   async getComments(postId: number) {
+    const cacheCommentsKey = cacheKeys.postComments(postId);
     try {
+      const cachedCommentData = await this.cacheManager.get(cacheCommentsKey);
+      if (cachedCommentData) {
+        return cachedCommentData;
+      }
+
       // Verify post exists
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
@@ -454,7 +490,7 @@ export class PostService {
       }
 
       // Get comments with user info
-      return await this.prisma.comments.findMany({
+      const comments = await this.prisma.comments.findMany({
         where: { postId },
         orderBy: { created_at: 'desc' },
         include: {
@@ -466,6 +502,10 @@ export class PostService {
           },
         },
       });
+
+      await this.cacheManager.set(cacheCommentsKey, comments);
+
+      return comments;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -475,6 +515,7 @@ export class PostService {
   }
 
   async toggleBookmark(postId: number, userId: number) {
+    const cacheBookMarkKey = cacheKeys.postBookmarks(userId);
     try {
       // Verify post exists
       const post = await this.prisma.posts.findUnique({
@@ -492,6 +533,8 @@ export class PostService {
           userId,
         },
       });
+
+      await this.cacheManager.del(cacheBookMarkKey);
 
       if (existingBookmark) {
         // Remove bookmark
@@ -521,7 +564,14 @@ export class PostService {
   }
 
   async getBookmarks(userId: number) {
+    const cacheBookMarkKey = cacheKeys.postBookmarks(userId);
     try {
+      const cachedBookmarkedData =
+        await this.cacheManager.get(cacheBookMarkKey);
+      if (cachedBookmarkedData) {
+        return cachedBookmarkedData;
+      }
+
       // Verify user exists
       const user = await this.prisma.users.findUnique({
         where: { id: userId },
@@ -531,7 +581,7 @@ export class PostService {
         throw new NotFoundException('User not found');
       }
 
-      return this.prisma.bookmarks.findMany({
+      const bookmarks = await this.prisma.bookmarks.findMany({
         where: { userId },
         select: {
           id: true,
@@ -561,6 +611,10 @@ export class PostService {
           },
         },
       });
+
+      await this.cacheManager.set(cacheBookMarkKey, bookmarks);
+
+      return bookmarks;
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
