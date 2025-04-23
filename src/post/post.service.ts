@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -13,10 +14,16 @@ import * as fs from 'fs';
 import { uploadToCloudinary } from 'src/utils/cloudinary.util';
 import { PostEnum } from './enum/post-status.enum';
 import { CommentPostDTO } from './dto/comment-post.dto';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { cacheKeys } from 'src/utils/cacheKeys.util';
 
 @Injectable()
 export class PostService {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly prisma: PrismaService,
+  ) {
     this.configureCloudinary();
   }
 
@@ -29,9 +36,14 @@ export class PostService {
   }
 
   async getPosts() {
+    const cachePostsKey = cacheKeys.posts();
     try {
-      return await this.prisma.posts.findMany({
-        take: 10,
+      const cachedPostsData = await this.cacheManager.get(cachePostsKey);
+      if (cachedPostsData) {
+        return cachedPostsData;
+      }
+
+      const posts = await this.prisma.posts.findMany({
         orderBy: { created_at: 'desc' },
         select: {
           id: true,
@@ -63,7 +75,6 @@ export class PostService {
                 },
               },
             },
-            take: 3, // Limit initial comments load
             orderBy: { created_at: 'desc' },
           },
           _count: {
@@ -73,6 +84,10 @@ export class PostService {
           },
         },
       });
+
+      this.cacheManager.set(cachePostsKey, posts);
+
+      return posts;
     } catch (error) {
       throw new InternalServerErrorException('Failed to fetch posts');
     }
@@ -384,6 +399,7 @@ export class PostService {
     commentPostDto: CommentPostDTO,
   ) {
     try {
+      await this.incrementViewCount(postId);
       // Verify post exists
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },

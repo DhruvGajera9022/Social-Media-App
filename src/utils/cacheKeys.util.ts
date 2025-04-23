@@ -5,6 +5,7 @@ export const cacheKeys = {
 
   userSessions: (userId) => `chat:user:${userId}:sessions`,
   chatRoomMessages: (roomId) => `chat:room:${roomId}:messages`,
+  posts: () => `social:posts`,
   postLikes: (postId) => `social:post:${postId}:likes`,
   postComments: (postId) => `social:post:${postId}:comments`,
   notificationCount: (userId) => `chat:user:${userId}:notifications`,

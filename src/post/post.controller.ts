@@ -38,13 +38,13 @@ import { errorResponse, successResponse } from 'src/utils/response.util';
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
+  @Get()
   @ApiOperation({ summary: 'Get all posts' })
   @ApiResponse({
     status: 200,
     description: 'List of posts retrieved successfully',
   })
   @ApiResponse({ status: 500, description: 'Server error' })
-  @Get()
   async getPosts(@Res() res: ExpressResponse) {
     try {
       const posts = await this.postService.getPosts();
