@@ -4,10 +4,30 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateNotificationDto } from './dto/create-notification.dto';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class NotificationsService {
   constructor(private prisma: PrismaService) {}
+
+  async createNotification(createNotificationDto: CreateNotificationDto) {
+    const { userId, actorId, type, entityId } = createNotificationDto;
+    try {
+      const newNotification = await this.prisma.notifications.create({
+        data: {
+          userId,
+          actorId,
+          type: NotificationType.LIKE,
+          entityId,
+        },
+      });
+
+      return newNotification;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 
   async findAllForUser(userId: number) {
     try {

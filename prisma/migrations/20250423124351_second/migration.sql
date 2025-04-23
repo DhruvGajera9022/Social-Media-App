@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Notifications" ALTER COLUMN "type" SET DEFAULT 'FOLLOW_REQUEST';
