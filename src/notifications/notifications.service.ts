@@ -28,4 +28,19 @@ export class NotificationsService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  async getUnreadCount(userId: number) {
+    try {
+      const unreadCount = await this.prisma.notifications.count({
+        where: {
+          userId,
+          isRead: false,
+        },
+      });
+
+      return unreadCount;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }
