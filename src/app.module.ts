@@ -15,6 +15,7 @@ import { RolesModule } from './roles/roles.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { RedisOptions } from './config/redis.config';
 import { ConfigModule } from '@nestjs/config';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { ConfigModule } from '@nestjs/config';
     ProfileModule,
     PostModule,
     RolesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
