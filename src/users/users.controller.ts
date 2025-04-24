@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   NotFoundException,
   Param,
   ParseIntPipe,
@@ -28,6 +29,8 @@ import { RolesGuard } from 'src/roles/guard/roles.guard';
 import { Roles } from 'src/roles/decorator/roles.decorator';
 import { RolesEnum } from 'src/roles/enum/roles.enum';
 import { Response } from 'express';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('Users') // Groups this under "Users" in Swagger
 @ApiBearerAuth() // Enables Bearer token authentication in Swagger
@@ -35,7 +38,10 @@ import { Response } from 'express';
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+  ) {}
 
   // Get all users
   @ApiOperation({ summary: 'Get all users (Admin only)' })
@@ -49,6 +55,7 @@ export class UsersController {
       const users = await this.usersService.users();
       return successResponse(res, 'Users data retrieved.', users);
     } catch (error) {
+      this.logger.error(error.message);
       return error(res, 401, error.message);
     }
   }
@@ -70,6 +77,7 @@ export class UsersController {
       const user = await this.usersService.searchUser(firstName, +page, +limit);
       return successResponse(res, 'User data found.', user);
     } catch (error) {
+      this.logger.error(error.message);
       return error(res, 401, error.message);
     }
   }
@@ -92,6 +100,7 @@ export class UsersController {
 
       return successResponse(res, 'User found successfully.', user);
     } catch (error) {
+      this.logger.error(error.message);
       return error(res, 401, error.message);
     }
   }
@@ -126,6 +135,7 @@ export class UsersController {
         updatedUser,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return error(res, 401, error.message);
     }
   }
@@ -148,6 +158,7 @@ export class UsersController {
       }
       return successResponse(res, 'User deleted successfully.', deletedUser);
     } catch (error) {
+      this.logger.error(error.message);
       return error(res, 401, error.message);
     }
   }
