@@ -8,7 +8,13 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 import { Response } from 'express';
@@ -27,6 +33,12 @@ export class NotificationsController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'Get all notifications for the authenticated user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Notifications fetched successfully.',
+  })
+  @ApiResponse({ status: 400, description: 'Failed to fetch notifications.' })
   async findAll(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
@@ -44,6 +56,12 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
+  @ApiOperation({ summary: 'Get count of unread notifications for the user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Unread notification count fetched.',
+  })
+  @ApiResponse({ status: 400, description: 'Failed to fetch unread-count.' })
   async getUnreadCount(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
@@ -57,6 +75,10 @@ export class NotificationsController {
   }
 
   @Post(':id/mark-read')
+  @ApiOperation({ summary: 'Mark a specific notification as read by ID' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Notification ID' })
+  @ApiResponse({ status: 200, description: 'Notification marked as read.' })
+  @ApiResponse({ status: 400, description: 'Failed to mark as read.' })
   async markAsRead(@Param('id') id: string, @Res() res: Response) {
     try {
       const unreadCount = await this.notificationsService.markAsRead(+id);
@@ -68,6 +90,12 @@ export class NotificationsController {
   }
 
   @Post('mark-all-read')
+  @ApiOperation({ summary: 'Mark all notifications as read for the user' })
+  @ApiResponse({
+    status: 200,
+    description: 'All notifications marked as read.',
+  })
+  @ApiResponse({ status: 400, description: 'Failed to mark all as read.' })
   async markAllAsRead(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
