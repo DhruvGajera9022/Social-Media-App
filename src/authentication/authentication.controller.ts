@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Patch,
   Post,
   Req,
@@ -31,6 +32,8 @@ import { GoogleOAuthGuard } from './guard/google-oauth.guard';
 import { TwoFactorAuthLoginDTO } from './dto/2fa-auth.dto';
 import { ProfileService } from 'src/profile/profile.service';
 import { errorResponse, successResponse } from 'src/utils/response.util';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('Authentication') // For api documentation tag
 @Controller('auth')
@@ -38,6 +41,7 @@ export class AuthenticationController {
   constructor(
     private readonly authenticationService: AuthenticationService,
     private readonly profileService: ProfileService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
   // Handle the new user registration
@@ -51,6 +55,7 @@ export class AuthenticationController {
       const register = await this.authenticationService.register(registerDto);
       return successResponse(res, 'Registration successful', register);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, error.message);
     }
   }
@@ -66,6 +71,7 @@ export class AuthenticationController {
       const login = await this.authenticationService.login(loginDto);
       return successResponse(res, 'Login successful', login);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
     }
   }
@@ -103,6 +109,7 @@ export class AuthenticationController {
         login2FA,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 400, error.message);
     }
   }
@@ -126,7 +133,7 @@ export class AuthenticationController {
       return res.redirect(successUrl);
     } catch (error) {
       // On failure, redirect back to login with error
-      console.log(error);
+      this.logger.error(error.message);
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=google`);
     }
   }
@@ -153,6 +160,7 @@ export class AuthenticationController {
         refresh,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
     }
   }
@@ -178,6 +186,7 @@ export class AuthenticationController {
       );
       return successResponse(res, 'Password changed successfully');
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 400, error.message);
     }
   }
@@ -203,6 +212,7 @@ export class AuthenticationController {
         await this.authenticationService.forgotPassword(forgotPasswordDto);
       return successResponse(res, 'Email sent successfully', forgotPassword);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 400, error.message);
     }
   }
@@ -223,6 +233,7 @@ export class AuthenticationController {
         await this.authenticationService.resetPassword(resetPasswordDto);
       return successResponse(res, 'Password reset successfully', resetPassword);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 401, error.message);
     }
   }
