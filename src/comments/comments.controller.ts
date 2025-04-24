@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  Inject,
   Param,
   ParseIntPipe,
   Post,
@@ -25,11 +26,16 @@ import { AddCommentDTO } from 'src/comments/dto/add-comment.dto';
 import { Request, Response } from 'express';
 import { errorResponse, successResponse } from 'src/utils/response.util';
 import { EditCommentDTO } from './dto/edit-comment.dto';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('Comments')
 @Controller('comments')
 export class CommentsController {
-  constructor(private readonly commentsService: CommentsService) {}
+  constructor(
+    private readonly commentsService: CommentsService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+  ) {}
 
   @Post(':id')
   @ApiBearerAuth()
@@ -55,6 +61,7 @@ export class CommentsController {
       );
       return successResponse(res, 'Comment added successfully', newComment);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -73,6 +80,7 @@ export class CommentsController {
       const comments = await this.commentsService.getComments(id);
       return successResponse(res, 'Comments retrieved successfully', comments);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -95,6 +103,7 @@ export class CommentsController {
       );
       return successResponse(res, 'Comment updated successfully', comments);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -113,6 +122,7 @@ export class CommentsController {
       const comments = await this.commentsService.deleteComment(id);
       return successResponse(res, 'Comment deleted successfully', comments);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
