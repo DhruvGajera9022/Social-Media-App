@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationType } from '@prisma/client';
 import { NotificationsGateway } from './gateway/notifications.gateway';
 
@@ -15,16 +14,16 @@ export class NotificationsService {
     private notificationsGateway: NotificationsGateway,
   ) {}
 
-  async create(createNotificationDto: CreateNotificationDto) {
-    const notification = await this.prisma.notifications.create({
-      data: createNotificationDto,
-    });
-    return notification;
-  }
-
-  async createNotification(createNotificationDto: CreateNotificationDto) {
-    const { userId, actorId, type, entityId } = createNotificationDto;
+  async createNotification(
+    userId: number,
+    actorId: number,
+    type: NotificationType,
+    entityId: number,
+  ) {
     try {
+      console.log(
+        `Creating notification in database: userId=${userId}, actorId=${actorId}, type=${type}, entityId=${entityId}`,
+      );
       const newNotification = await this.prisma.notifications.create({
         data: {
           userId,
@@ -43,6 +42,10 @@ export class NotificationsService {
         },
       });
 
+      console.log(
+        `Notification created in database with ID: ${newNotification.id}`,
+      );
+      console.log(`Sending notification via WebSocket to user ${userId}`);
       this.notificationsGateway.sendNotificationToUser(userId, newNotification);
 
       return newNotification;
@@ -121,14 +124,20 @@ export class NotificationsService {
     postUserId: number,
   ) {
     try {
-      if (actorId === postUserId) return; // Don't notify users about their own actions
+      console.log(
+        `createLikeNotification: actor=${actorId}, recipient=${postUserId}, postId=${postId}`,
+      );
+      if (actorId === postUserId) {
+        console.log('Skipping notification: actor is same as recipient');
+        return;
+      }
 
-      return this.create({
-        userId: postUserId,
+      return this.createNotification(
+        postUserId,
         actorId,
-        type: NotificationType.LIKE,
-        entityId: postId,
-      });
+        NotificationType.LIKE,
+        postId,
+      );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -142,12 +151,12 @@ export class NotificationsService {
     try {
       if (actorId === postUserId) return;
 
-      return this.create({
-        userId: postUserId,
+      return this.createNotification(
+        postUserId,
         actorId,
-        type: NotificationType.COMMENT,
-        entityId: postId,
-      });
+        NotificationType.COMMENT,
+        postId,
+      );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -155,12 +164,12 @@ export class NotificationsService {
 
   async createFollowNotification(followerId: number, followingId: number) {
     try {
-      return this.create({
-        userId: followingId,
-        actorId: followerId,
-        type: NotificationType.FOLLOW,
-        entityId: followingId,
-      });
+      return this.createNotification(
+        followingId,
+        followerId,
+        NotificationType.FOLLOW,
+        followingId,
+      );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -168,12 +177,12 @@ export class NotificationsService {
 
   async createFollowRequestNotification(requesterId: number, targetId: number) {
     try {
-      return this.create({
-        userId: targetId,
-        actorId: requesterId,
-        type: NotificationType.FOLLOW_REQUEST,
-        entityId: targetId,
-      });
+      return this.createNotification(
+        targetId,
+        requesterId,
+        NotificationType.FOLLOW_REQUEST,
+        targetId,
+      );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

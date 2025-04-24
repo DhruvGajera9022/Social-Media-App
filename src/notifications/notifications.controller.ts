@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   Inject,
@@ -16,7 +15,6 @@ import { Response } from 'express';
 import { errorResponse, successResponse } from 'src/utils/response.util';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { PushSubscriptionDTO } from './dto/push-subscription.dto';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -83,34 +81,6 @@ export class NotificationsController {
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to mark all notification as read');
-    }
-  }
-
-  @Post('subscribe')
-  async subscribe(
-    @Req() req,
-    @Res() res: Response,
-    @Body() subscription: PushSubscriptionDTO,
-  ) {
-    try {
-      const userId = +req.user.userId;
-      const subscribe = await this.notificationsService.saveSubscription(
-        userId,
-        subscription,
-      );
-      return successResponse(res, 'Success', subscribe);
-    } catch (error) {
-      return errorResponse(res, 400, 'Failed to subscribe');
-    }
-  }
-
-  @Get('vapid-public-key')
-  getVapidPublicKey(@Res() res: Response) {
-    try {
-      const result = { publicKey: process.env.VAPID_PUBLIC_KEY };
-      return successResponse(res, 'Success', result);
-    } catch (error) {
-      return errorResponse(res, 400, 'Failed');
     }
   }
 }

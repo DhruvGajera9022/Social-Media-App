@@ -18,13 +18,14 @@ import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { cacheKeys } from 'src/utils/cacheKeys.util';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class PostService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationsService,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.configureCloudinary();
   }
@@ -373,6 +374,7 @@ export class PostService {
   async likePost(postId: number, userId: number) {
     const cachePostsKey = cacheKeys.posts();
     try {
+      console.log(`User ${userId} attempting to like/unlike post ${postId}`);
       // First check if post exists
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
@@ -381,6 +383,8 @@ export class PostService {
       if (!post) {
         throw new NotFoundException('Post not found');
       }
+
+      console.log(`Post belongs to user ${post.userId}`);
 
       // Check if user has already liked the post
       const existingLike = await this.prisma.postLikes.findUnique({
@@ -391,6 +395,7 @@ export class PostService {
 
       if (existingLike) {
         // Unlike the post if already liked
+        console.log(`User ${userId} is unliking post ${postId}`);
         const [updatedPost] = await this.prisma.$transaction([
           this.prisma.posts.update({
             where: { id: postId },
@@ -403,6 +408,7 @@ export class PostService {
         return { message: 'Post unliked', post: updatedPost };
       } else {
         // Like the post if not already liked
+        console.log(`User ${userId} is liking post ${postId}`);
         const [updatedPost] = await this.prisma.$transaction([
           this.prisma.posts.update({
             where: { id: postId },
@@ -414,11 +420,16 @@ export class PostService {
         ]);
 
         if (post.userId !== userId) {
-          await this.notificationService.createLikeNotification(
+          console.log(
+            `Creating notification: User ${userId} liked post ${postId} of user ${post.userId}`,
+          );
+          await this.notificationsService.createLikeNotification(
             postId,
             userId,
             post.userId,
           );
+        } else {
+          console.log(`No notification created: User liked their own post`);
         }
 
         return { message: 'Post liked', post: updatedPost };
