@@ -17,12 +17,14 @@ import { CommentPostDTO } from './dto/comment-post.dto';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { cacheKeys } from 'src/utils/cacheKeys.util';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class PostService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationsService,
   ) {
     this.configureCloudinary();
   }
@@ -410,6 +412,15 @@ export class PostService {
             data: { postId, userId },
           }),
         ]);
+
+        if (post.userId !== userId) {
+          await this.notificationService.createLikeNotification(
+            postId,
+            userId,
+            post.userId,
+          );
+        }
+
         return { message: 'Post liked', post: updatedPost };
       }
     } catch (error) {
