@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
@@ -28,12 +29,17 @@ import { TwoFactorAuthDTO } from './dto/two-factor-auth.dto';
 import { TwoFactorAuthLoginDTO } from 'src/authentication/dto/2fa-auth.dto';
 import { Response } from 'express';
 import { successResponse, errorResponse } from '../utils/response.util'; // Adjust the import path as needed
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('Profile') // Tags for api documentation
 @ApiBearerAuth() // Requires authentication in Swagger
 @Controller('profile')
 export class ProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(
+    private readonly profileService: ProfileService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+  ) {}
 
   // Get user profile
   @Get()
@@ -46,6 +52,7 @@ export class ProfileController {
       const profile = await this.profileService.getProfile(+req.user.userId);
       return successResponse(res, 'Profile fetched successfully', profile);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to fetch profile data.');
     }
   }
@@ -69,6 +76,7 @@ export class ProfileController {
       );
       return successResponse(res, 'Profile edited successfully', editProfile);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to edit profile.');
     }
   }
@@ -118,6 +126,7 @@ export class ProfileController {
       );
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to update profile-picture');
     }
   }
@@ -139,6 +148,7 @@ export class ProfileController {
         await this.profileService.removeProfilePicture(userId);
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to remove the profile-picture');
     }
   }
@@ -162,6 +172,7 @@ export class ProfileController {
       );
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to send follow request.');
     }
   }
@@ -185,6 +196,7 @@ export class ProfileController {
       );
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to accept the request.');
     }
   }
@@ -208,6 +220,7 @@ export class ProfileController {
       );
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to cancel follow request.');
     }
   }
@@ -231,6 +244,7 @@ export class ProfileController {
       );
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to unfollow user.');
     }
   }
@@ -254,6 +268,7 @@ export class ProfileController {
         userFollowers,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to get followers list.');
     }
   }
@@ -277,6 +292,7 @@ export class ProfileController {
         userFollowing,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to get following list.');
     }
   }
@@ -301,6 +317,7 @@ export class ProfileController {
         followRequests,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to get follow requests.');
     }
   }
@@ -326,6 +343,7 @@ export class ProfileController {
       );
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to block user.');
     }
   }
@@ -351,6 +369,7 @@ export class ProfileController {
       );
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to unblock user.');
     }
   }
@@ -377,6 +396,7 @@ export class ProfileController {
       );
       return successResponse(res, 'Block status retrieved', { isBlocked });
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to check user is blocked or not.');
     }
   }
@@ -400,6 +420,7 @@ export class ProfileController {
         blockedUsers,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to retrieve the blocked users.');
     }
   }
@@ -430,6 +451,7 @@ export class ProfileController {
         mutualFollowers,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to get mutual followers.');
     }
   }
@@ -449,6 +471,7 @@ export class ProfileController {
       const { message } = await this.profileService.deactivateAccount(userId);
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to deactivate account.');
     }
   }
@@ -468,6 +491,7 @@ export class ProfileController {
       const { message } = await this.profileService.reactivateAccount(userId);
       return successResponse(res, message);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to reactivate account.');
     }
   }
@@ -491,6 +515,7 @@ export class ProfileController {
       const users = await this.profileService.searchUser(userId, query);
       return successResponse(res, 'Search results fetched successfully', users);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to search user.');
     }
   }
@@ -521,6 +546,7 @@ export class ProfileController {
 
       return successResponse(res, 'QR code generated', { secret, qrCode });
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(
         res,
         400,
@@ -576,6 +602,7 @@ export class ProfileController {
 
       return successResponse(res, 'Two-factor authentication has been enabled');
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to turn on 2FA');
     }
   }
@@ -615,6 +642,7 @@ export class ProfileController {
         login2FA,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to 2FA authentication');
     }
   }
@@ -629,6 +657,7 @@ export class ProfileController {
       const profile = await this.profileService.getProfile(+id);
       return successResponse(res, 'Profile fetched successfully', profile);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to fetch profile data by id.');
     }
   }
