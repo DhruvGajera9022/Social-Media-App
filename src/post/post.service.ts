@@ -18,13 +18,14 @@ import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { cacheKeys } from 'src/utils/cacheKeys.util';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class PostService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationsService,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.configureCloudinary();
   }
@@ -403,6 +404,7 @@ export class PostService {
         return { message: 'Post unliked', post: updatedPost };
       } else {
         // Like the post if not already liked
+        console.log(`User ${userId} is liking post ${postId}`);
         const [updatedPost] = await this.prisma.$transaction([
           this.prisma.posts.update({
             where: { id: postId },
@@ -414,7 +416,7 @@ export class PostService {
         ]);
 
         if (post.userId !== userId) {
-          await this.notificationService.createLikeNotification(
+          await this.notificationsService.createLikeNotification(
             postId,
             userId,
             post.userId,

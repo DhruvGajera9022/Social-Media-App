@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   Inject,
@@ -9,14 +8,19 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/authentication/guard/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 import { Response } from 'express';
 import { errorResponse, successResponse } from 'src/utils/response.util';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { PushSubscriptionDTO } from './dto/push-subscription.dto';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -29,6 +33,12 @@ export class NotificationsController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'Get all notifications for the authenticated user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Notifications fetched successfully.',
+  })
+  @ApiResponse({ status: 400, description: 'Failed to fetch notifications.' })
   async findAll(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
@@ -46,6 +56,12 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
+  @ApiOperation({ summary: 'Get count of unread notifications for the user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Unread notification count fetched.',
+  })
+  @ApiResponse({ status: 400, description: 'Failed to fetch unread-count.' })
   async getUnreadCount(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
@@ -59,6 +75,10 @@ export class NotificationsController {
   }
 
   @Post(':id/mark-read')
+  @ApiOperation({ summary: 'Mark a specific notification as read by ID' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Notification ID' })
+  @ApiResponse({ status: 200, description: 'Notification marked as read.' })
+  @ApiResponse({ status: 400, description: 'Failed to mark as read.' })
   async markAsRead(@Param('id') id: string, @Res() res: Response) {
     try {
       const unreadCount = await this.notificationsService.markAsRead(+id);
@@ -70,6 +90,12 @@ export class NotificationsController {
   }
 
   @Post('mark-all-read')
+  @ApiOperation({ summary: 'Mark all notifications as read for the user' })
+  @ApiResponse({
+    status: 200,
+    description: 'All notifications marked as read.',
+  })
+  @ApiResponse({ status: 400, description: 'Failed to mark all as read.' })
   async markAllAsRead(@Req() req, @Res() res: Response) {
     try {
       const userId = +req.user.userId;
@@ -83,34 +109,6 @@ export class NotificationsController {
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to mark all notification as read');
-    }
-  }
-
-  @Post('subscribe')
-  async subscribe(
-    @Req() req,
-    @Res() res: Response,
-    @Body() subscription: PushSubscriptionDTO,
-  ) {
-    try {
-      const userId = +req.user.userId;
-      const subscribe = await this.notificationsService.saveSubscription(
-        userId,
-        subscription,
-      );
-      return successResponse(res, 'Success', subscribe);
-    } catch (error) {
-      return errorResponse(res, 400, 'Failed to subscribe');
-    }
-  }
-
-  @Get('vapid-public-key')
-  getVapidPublicKey(@Res() res: Response) {
-    try {
-      const result = { publicKey: process.env.VAPID_PUBLIC_KEY };
-      return successResponse(res, 'Success', result);
-    } catch (error) {
-      return errorResponse(res, 400, 'Failed');
     }
   }
 }
