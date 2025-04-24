@@ -6,9 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { CommentPostDTO } from 'src/post/dto/comment-post.dto';
+import { AddCommentDTO } from 'src/comments/dto/add-comment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { cacheKeys } from 'src/utils/cacheKeys.util';
+import { EditCommentDTO } from './dto/edit-comment.dto';
 
 @Injectable()
 export class CommentsService {
@@ -27,9 +28,9 @@ export class CommentsService {
   async commentPost(
     postId: number,
     userId: number,
-    commentPostDto: CommentPostDTO,
+    commentPostDto: AddCommentDTO,
   ) {
-    const cachePostsKey = cacheKeys.posts();
+    const cachePostsKey = cacheKeys.postComments(postId);
     try {
       await this.incrementViewCount(postId);
       // Verify post exists
@@ -115,6 +116,48 @@ export class CommentsService {
         throw error;
       }
       throw new InternalServerErrorException('Failed to fetch comments');
+    }
+  }
+
+  async editComment(commentId: number, editCommentDto: EditCommentDTO) {
+    const { content } = editCommentDto;
+    try {
+      const comment = await this.prisma.comments.findUnique({
+        where: { id: commentId },
+      });
+      if (!comment) {
+        throw new NotFoundException('Comment not found');
+      }
+
+      const cacheCommentsKey = cacheKeys.postComments(comment.postId);
+      await this.cacheManager.del(cacheCommentsKey);
+
+      return this.prisma.comments.update({
+        where: { id: commentId },
+        data: {
+          content,
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async deleteComment(commentId: number) {
+    try {
+      const comment = await this.prisma.comments.findUnique({
+        where: { id: commentId },
+      });
+      if (!comment) {
+        throw new NotFoundException('Comment not found');
+      }
+
+      const cacheCommentsKey = cacheKeys.postComments(comment.postId);
+      await this.cacheManager.del(cacheCommentsKey);
+
+      return this.prisma.comments.delete({ where: { id: commentId } });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
     }
   }
 }

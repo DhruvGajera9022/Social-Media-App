@@ -29,7 +29,7 @@ import { EditPostDTO } from './dto/edit-post.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { CommentPostDTO } from './dto/comment-post.dto';
+import { CommentPostDTO } from '../comments/dto/add-comment.dto';
 import { Request, Response as ExpressResponse } from 'express';
 import { errorResponse, successResponse } from 'src/utils/response.util';
 
