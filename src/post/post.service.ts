@@ -402,7 +402,6 @@ export class PostService {
         return { message: 'Post unliked', post: updatedPost };
       } else {
         // Like the post if not already liked
-        console.log(`User ${userId} is liking post ${postId}`);
         const [updatedPost] = await this.prisma.$transaction([
           this.prisma.posts.update({
             where: { id: postId },
