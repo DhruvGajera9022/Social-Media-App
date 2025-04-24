@@ -78,24 +78,6 @@ export class PostController {
     }
   }
 
-  @ApiOperation({ summary: 'Get all comments for a post' })
-  @ApiParam({ name: 'id', required: true, description: 'Post ID' })
-  @ApiResponse({ status: 200, description: 'Comments retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'Post not found' })
-  @ApiResponse({ status: 500, description: 'Server error' })
-  @Get(':id/comment')
-  async getComments(
-    @Param('id', ParseIntPipe) id: number,
-    @Res() res: ExpressResponse,
-  ) {
-    try {
-      const comments = await this.postService.getComments(id);
-      return successResponse(res, 'Comments retrieved successfully', comments);
-    } catch (error) {
-      return errorResponse(res, error.status || 500, error.message);
-    }
-  }
-
   @ApiOperation({ summary: 'Get a post by ID' })
   @ApiParam({ name: 'id', required: true, description: 'Post ID' })
   @ApiResponse({ status: 200, description: 'Post retrieved successfully' })
@@ -263,34 +245,6 @@ export class PostController {
       const userId = req.user.userId;
       const deletedPost = await this.postService.deletePost(id, userId);
       return successResponse(res, 'Post deleted successfully', deletedPost);
-    } catch (error) {
-      return errorResponse(res, error.status || 500, error.message);
-    }
-  }
-
-  @ApiOperation({ summary: 'Comment on a post' })
-  @ApiParam({ name: 'id', required: true, description: 'Post ID' })
-  @ApiResponse({ status: 201, description: 'Comment added successfully' })
-  @ApiResponse({ status: 404, description: 'Post or user not found' })
-  @ApiResponse({ status: 500, description: 'Server error' })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/comment')
-  @HttpCode(201)
-  async commentPost(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request & { user: { userId: number } },
-    @Body() commentPostDto: CommentPostDTO,
-    @Res() res: ExpressResponse,
-  ) {
-    try {
-      const userId = req.user.userId;
-      const newComment = await this.postService.commentPost(
-        id,
-        userId,
-        commentPostDto,
-      );
-      return successResponse(res, 'Comment added successfully', newComment);
     } catch (error) {
       return errorResponse(res, error.status || 500, error.message);
     }
