@@ -13,12 +13,10 @@ import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
 import { uploadToCloudinary } from 'src/utils/cloudinary.util';
 import { PostEnum } from './enum/post-status.enum';
-import { CommentPostDTO } from '../comments/dto/add-comment.dto';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { cacheKeys } from 'src/utils/cacheKeys.util';
 import { NotificationsService } from 'src/notifications/notifications.service';
-import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class PostService {

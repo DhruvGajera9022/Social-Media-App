@@ -10,12 +10,14 @@ import { AddCommentDTO } from 'src/comments/dto/add-comment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { cacheKeys } from 'src/utils/cacheKeys.util';
 import { EditCommentDTO } from './dto/edit-comment.dto';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class CommentsService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private async incrementViewCount(postId: number): Promise<void> {
@@ -52,6 +54,14 @@ export class CommentsService {
       }
 
       await this.cacheManager.del(cachePostsKey);
+
+      if (post.userId !== userId) {
+        await this.notificationsService.createCommentNotification(
+          postId,
+          userId,
+          post.userId,
+        );
+      }
 
       // Create comment
       return await this.prisma.comments.create({
