@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  Inject,
   Param,
   ParseIntPipe,
   Patch,
@@ -29,14 +30,18 @@ import { EditPostDTO } from './dto/edit-post.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { CommentPostDTO } from '../comments/dto/add-comment.dto';
 import { Request, Response as ExpressResponse } from 'express';
 import { errorResponse, successResponse } from 'src/utils/response.util';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('Posts')
 @Controller('post')
 export class PostController {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly postService: PostService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all posts' })
@@ -50,6 +55,7 @@ export class PostController {
       const posts = await this.postService.getPosts();
       return successResponse(res, 'Posts retrieved successfully', posts);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 500, error.message);
     }
   }
@@ -74,6 +80,7 @@ export class PostController {
         bookmarks,
       );
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -96,6 +103,7 @@ export class PostController {
       const post = await this.postService.getPostById(id, userId);
       return successResponse(res, 'Post retrieved successfully', post);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -143,6 +151,7 @@ export class PostController {
       );
       return successResponse(res, 'Post created successfully', newPost);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -171,6 +180,7 @@ export class PostController {
       );
       return successResponse(res, 'Post edited successfully', editedPost);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -201,6 +211,7 @@ export class PostController {
 
       return successResponse(res, pinnedMessage, pinnedPost);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -223,6 +234,7 @@ export class PostController {
       const { message, post } = await this.postService.likePost(id, userId);
       return successResponse(res, message, post);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -246,6 +258,7 @@ export class PostController {
       const deletedPost = await this.postService.deletePost(id, userId);
       return successResponse(res, 'Post deleted successfully', deletedPost);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
@@ -269,6 +282,7 @@ export class PostController {
         bookmarked: result.bookmarked,
       });
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
     }
   }
