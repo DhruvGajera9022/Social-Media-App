@@ -15,36 +15,35 @@ datasource db {
 }
 
 model Users {
-  id                     Int               @id @default(autoincrement())
+  id                     Int              @id @default(autoincrement())
   username               String
-  firstName              String            @default("")
-  lastName               String            @default("")
-  email                  String            @unique
+  firstName              String           @default("")
+  lastName               String           @default("")
+  email                  String           @unique
   password               String
-  roleId                 Int               @default(2)
-  role                   Roles             @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId                 Int              @default(2)
+  role                   Roles            @relation(fields: [roleId], references: [id], onDelete: Cascade)
   profile_picture        String
-  is_private             Boolean           @default(false)
-  is_active              Boolean           @default(true)
-  is_2fa                 Boolean           @default(false)
-  secret_2fa             String            @default("")
-  createdAt              DateTime          @default(now())
-  updatedAt              DateTime          @updatedAt
+  is_private             Boolean          @default(false)
+  is_active              Boolean          @default(true)
+  is_2fa                 Boolean          @default(false)
+  secret_2fa             String           @default("")
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
   refreshToken           RefreshToken[]
   resetToken             ResetToken?
   posts                  Posts[]
-  followers              Followers[]       @relation("FollowersRelation")
-  following              Followers[]       @relation("FollowingRelation")
-  followRequestsSent     FollowRequests[]  @relation("FollowRequestsSent")
-  followRequestsReceived FollowRequests[]  @relation("FollowRequestsReceived")
+  followers              Followers[]      @relation("FollowersRelation")
+  following              Followers[]      @relation("FollowingRelation")
+  followRequestsSent     FollowRequests[] @relation("FollowRequestsSent")
+  followRequestsReceived FollowRequests[] @relation("FollowRequestsReceived")
   PostLikes              PostLikes[]
-  blockedBy              BlockList[]       @relation("BlockedRelation")
-  blocking               BlockList[]       @relation("BlockerRelation")
+  blockedBy              BlockList[]      @relation("BlockedRelation")
+  blocking               BlockList[]      @relation("BlockerRelation")
   comments               Comments[]
   bookmarks              Bookmarks[]
-  notifications          Notifications[]   @relation("UserNotifications")
-  notificationsTriggered Notifications[]   @relation("ActorNotifications")
-  pushSubscription       PushSubscription?
+  notifications          Notifications[]  @relation("UserNotifications")
+  notificationsTriggered Notifications[]  @relation("ActorNotifications")
 }
 
 model RefreshToken {
@@ -173,16 +172,4 @@ model Notifications {
 
   user  Users @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
   actor Users @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
-}
-
-model PushSubscription {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  endpoint  String
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
