@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
@@ -24,6 +25,8 @@ import {
 } from '@nestjs/swagger';
 import { RolesEnum } from './enum/roles.enum';
 import { Response } from 'express';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('Roles') // Tag for api documentation
 @ApiBearerAuth() // Adds Bearer token authentication in Swagger
@@ -31,7 +34,10 @@ import { Response } from 'express';
 @UseGuards(RolesGuard)
 @UseGuards(JwtAuthGuard)
 export class RolesController {
-  constructor(private readonly rolesService: RolesService) {}
+  constructor(
+    private readonly rolesService: RolesService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+  ) {}
 
   // Create Role
   @Post()
@@ -44,6 +50,7 @@ export class RolesController {
       const createRole = await this.rolesService.createRole(createRoleDto);
       return successResponse(res, 'Role created successfully.', createRole);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
     }
   }
@@ -58,6 +65,7 @@ export class RolesController {
       const roles = await this.rolesService.findAll();
       return successResponse(res, 'Role retrieved successfully.', roles);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
     }
   }
@@ -73,6 +81,7 @@ export class RolesController {
       const role = await this.rolesService.findOne(+id);
       return successResponse(res, 'Role found successfully.', role);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
     }
   }
@@ -92,6 +101,7 @@ export class RolesController {
       const updateRole = await this.rolesService.updateRole(+id, updateRoleDto);
       return successResponse(res, 'Role updated successfully.', updateRole);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
     }
   }
@@ -107,6 +117,7 @@ export class RolesController {
       const deleteRole = await this.rolesService.deleteRole(+id);
       return successResponse(res, 'Role deleted successfully.', deleteRole);
     } catch (error) {
+      this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
     }
   }
