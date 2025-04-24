@@ -6,7 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import 'colors';
 import { SpelunkerModule } from 'nestjs-spelunker';
 import * as fs from 'fs';
-// changes
+
 // Get global modules
 const getGlobalModule = (app: INestApplication) => {
   const modules = ((app as any).container as NestContainer).getModules();
