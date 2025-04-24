@@ -21,9 +21,6 @@ export class NotificationsService {
     entityId: number,
   ) {
     try {
-      console.log(
-        `Creating notification in database: userId=${userId}, actorId=${actorId}, type=${type}, entityId=${entityId}`,
-      );
       const newNotification = await this.prisma.notifications.create({
         data: {
           userId,
@@ -42,10 +39,6 @@ export class NotificationsService {
         },
       });
 
-      console.log(
-        `Notification created in database with ID: ${newNotification.id}`,
-      );
-      console.log(`Sending notification via WebSocket to user ${userId}`);
       this.notificationsGateway.sendNotificationToUser(userId, newNotification);
 
       return newNotification;
@@ -124,13 +117,7 @@ export class NotificationsService {
     postUserId: number,
   ) {
     try {
-      console.log(
-        `createLikeNotification: actor=${actorId}, recipient=${postUserId}, postId=${postId}`,
-      );
-      if (actorId === postUserId) {
-        console.log('Skipping notification: actor is same as recipient');
-        return;
-      }
+      if (actorId === postUserId) return;
 
       return this.createNotification(
         postUserId,
