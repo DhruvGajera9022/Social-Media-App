@@ -21,12 +21,14 @@ import { authenticator } from 'otplib';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { cacheKeys } from 'src/utils/cacheKeys.util';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class ProfileService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private prisma: PrismaService,
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
   ) {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -264,6 +266,11 @@ export class ProfileService {
       if (isBlocked) {
         throw new BadRequestException('You cannot follow this user');
       }
+
+      await this.notificationsService.createFollowNotification(
+        userId,
+        targetId,
+      );
 
       // Handle based on target user's privacy setting
       if (!targetUser.is_private) {
