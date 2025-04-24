@@ -16,6 +16,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { RedisOptions } from './config/redis.config';
 import { ConfigModule } from '@nestjs/config';
 import { NotificationsModule } from './notifications/notifications.module';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     PostModule,
     RolesModule,
     NotificationsModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
