@@ -35,4 +35,12 @@ export class CreatePostDTO {
   @IsArray()
   @IsString({ each: true, message: 'Each media URL must be a string' })
   media_url?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Time to schedule the post (ISO 8601 format)',
+    example: '2025-04-26T15:30:00.000Z',
+  })
+  @IsOptional()
+  @IsString()
+  schedule_time?: string;
 }

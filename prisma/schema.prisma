@@ -85,12 +85,6 @@ model Posts {
   Bookmarks   Bookmarks[]
 }
 
-enum PostStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
 model PostLikes {
   postId Int
   userId Int
@@ -182,4 +176,11 @@ model ScheduledPost {
   status        PostStatus
   schedule_time DateTime
   createdAt     DateTime   @default(now())
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  SCHEDULE
 }

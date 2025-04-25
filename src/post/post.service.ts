@@ -17,6 +17,7 @@ import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { cacheKeys } from 'src/utils/cacheKeys.util';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { BullmqService } from 'src/bullmq/bullmq.service';
 
 @Injectable()
 export class PostService {
@@ -24,6 +25,7 @@ export class PostService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly bullMqService: BullmqService,
   ) {
     this.configureCloudinary();
   }
@@ -187,7 +189,12 @@ export class PostService {
     files: Express.Multer.File[],
   ) {
     const cachePostsKey = cacheKeys.posts();
-    const { title, content, status = PostEnum.PUBLISHED } = createPostDto;
+    const {
+      title,
+      content,
+      status = PostEnum.PUBLISHED,
+      schedule_time,
+    } = createPostDto;
 
     if (!files || files.length === 0) {
       throw new BadRequestException('No media files uploaded');
@@ -196,6 +203,29 @@ export class PostService {
     try {
       const mediaUrls = await this.uploadFilesToCloudinary(files);
 
+      if (status == PostEnum.SCHEDULE) {
+        if (!schedule_time || isNaN(Date.parse(schedule_time))) {
+          throw new BadRequestException('Invalid or missing scheduled_time');
+        }
+
+        const scheduledPost = await this.prisma.scheduledPost.create({
+          data: {
+            title,
+            content,
+            status,
+            schedule_time: new Date(schedule_time),
+            media_url: mediaUrls,
+            userId,
+          },
+        });
+
+        await this.bullMqService.schedulePost(
+          scheduledPost.id,
+          new Date(schedule_time),
+        );
+
+        return scheduledPost;
+      }
       const newPost = await this.prisma.posts.create({
         data: {
           title,
