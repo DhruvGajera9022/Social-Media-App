@@ -53,7 +53,12 @@ export class AuthenticationController {
   async register(@Body() registerDto: RegisterDTO, @Res() res: Response) {
     try {
       const register = await this.authenticationService.register(registerDto);
-      return successResponse(res, 'Registration successful', register);
+      return successResponse(
+        res,
+        'Registration successful',
+        HttpStatus.OK,
+        register,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, error.message);
@@ -69,7 +74,7 @@ export class AuthenticationController {
   async login(@Body() loginDto: LoginDTO, @Res() res: Response) {
     try {
       const login = await this.authenticationService.login(loginDto);
-      return successResponse(res, 'Login successful', login);
+      return successResponse(res, 'Login successful', HttpStatus.OK, login);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
@@ -106,6 +111,7 @@ export class AuthenticationController {
       return successResponse(
         res,
         'Two Factor Authentication Successfully',
+        HttpStatus.OK,
         login2FA,
       );
     } catch (error) {
@@ -157,6 +163,7 @@ export class AuthenticationController {
       return successResponse(
         res,
         'Refresh token generated successfully',
+        HttpStatus.OK,
         refresh,
       );
     } catch (error) {
@@ -184,7 +191,11 @@ export class AuthenticationController {
         +req.user.userId,
         changePasswordDto,
       );
-      return successResponse(res, 'Password changed successfully');
+      return successResponse(
+        res,
+        'Password changed successfully',
+        HttpStatus.OK,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 400, error.message);
@@ -210,7 +221,12 @@ export class AuthenticationController {
     try {
       const forgotPassword =
         await this.authenticationService.forgotPassword(forgotPasswordDto);
-      return successResponse(res, 'Email sent successfully', forgotPassword);
+      return successResponse(
+        res,
+        'Email sent successfully',
+        HttpStatus.OK,
+        forgotPassword,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 400, error.message);
@@ -231,7 +247,12 @@ export class AuthenticationController {
     try {
       const resetPassword =
         await this.authenticationService.resetPassword(resetPasswordDto);
-      return successResponse(res, 'Password reset successfully', resetPassword);
+      return successResponse(
+        res,
+        'Password reset successfully',
+        HttpStatus.OK,
+        resetPassword,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 401, error.message);
