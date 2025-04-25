@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Inject,
   Param,
   Patch,
@@ -48,7 +49,12 @@ export class RolesController {
   async create(@Body() createRoleDto: CreateRoleDto, @Res() res: Response) {
     try {
       const createRole = await this.rolesService.createRole(createRoleDto);
-      return successResponse(res, 'Role created successfully.', createRole);
+      return successResponse(
+        res,
+        'Role created successfully.',
+        HttpStatus.CREATED,
+        createRole,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
@@ -63,7 +69,12 @@ export class RolesController {
   async findAll(@Res() res: Response) {
     try {
       const roles = await this.rolesService.findAll();
-      return successResponse(res, 'Role retrieved successfully.', roles);
+      return successResponse(
+        res,
+        'Role retrieved successfully.',
+        HttpStatus.OK,
+        roles,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
@@ -79,7 +90,12 @@ export class RolesController {
   async findOne(@Param('id') id: string, @Res() res: Response) {
     try {
       const role = await this.rolesService.findOne(+id);
-      return successResponse(res, 'Role found successfully.', role);
+      return successResponse(
+        res,
+        'Role found successfully.',
+        HttpStatus.OK,
+        role,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
@@ -99,7 +115,12 @@ export class RolesController {
   ) {
     try {
       const updateRole = await this.rolesService.updateRole(+id, updateRoleDto);
-      return successResponse(res, 'Role updated successfully.', updateRole);
+      return successResponse(
+        res,
+        'Role updated successfully.',
+        HttpStatus.OK,
+        updateRole,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
@@ -115,7 +136,12 @@ export class RolesController {
   async deleteRole(@Param('id') id: string, @Res() res: Response) {
     try {
       const deleteRole = await this.rolesService.deleteRole(+id);
-      return successResponse(res, 'Role deleted successfully.', deleteRole);
+      return successResponse(
+        res,
+        'Role deleted successfully.',
+        HttpStatus.OK,
+        deleteRole,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 401, error.message);
