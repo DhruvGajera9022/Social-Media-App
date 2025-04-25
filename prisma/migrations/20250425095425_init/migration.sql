@@ -111,6 +111,7 @@ CREATE TABLE "Comments" (
     "userId" INTEGER NOT NULL,
     "content" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Comments_pkey" PRIMARY KEY ("id")
 );
@@ -130,12 +131,26 @@ CREATE TABLE "Notifications" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "actorId" INTEGER NOT NULL,
-    "type" "NotificationType" NOT NULL,
+    "type" "NotificationType" NOT NULL DEFAULT 'FOLLOW_REQUEST',
     "entityId" INTEGER NOT NULL,
     "isRead" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Notifications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ScheduledPost" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "media_url" TEXT[],
+    "userId" INTEGER NOT NULL,
+    "status" "PostStatus" NOT NULL,
+    "schedule_time" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ScheduledPost_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex

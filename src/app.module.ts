@@ -17,6 +17,7 @@ import { RedisOptions } from './config/redis.config';
 import { ConfigModule } from '@nestjs/config';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CommentsModule } from './comments/comments.module';
+import { BullmqModule } from './bullmq/bullmq.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { CommentsModule } from './comments/comments.module';
     RolesModule,
     NotificationsModule,
     CommentsModule,
+    BullmqModule,
   ],
   controllers: [AppController],
   providers: [AppService],

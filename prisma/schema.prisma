@@ -173,3 +173,14 @@ model Notifications {
   user  Users @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
   actor Users @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
 }
+
+model ScheduledPost {
+  id            Int        @id @default(autoincrement())
+  title         String
+  content       String
+  media_url     String[]
+  userId        Int
+  status        PostStatus
+  schedule_time DateTime
+  createdAt     DateTime   @default(now())
+}
