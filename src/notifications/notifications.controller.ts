@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  HttpStatus,
   Inject,
   Param,
   Post,
@@ -47,6 +48,7 @@ export class NotificationsController {
       return successResponse(
         res,
         'Notification fetched successfully.',
+        HttpStatus.OK,
         notifications,
       );
     } catch (error) {
@@ -67,7 +69,12 @@ export class NotificationsController {
       const userId = +req.user.userId;
       const unreadCount =
         await this.notificationsService.getUnreadCount(userId);
-      return successResponse(res, 'Unread Notification fetched', unreadCount);
+      return successResponse(
+        res,
+        'Unread Notification fetched',
+        HttpStatus.OK,
+        unreadCount,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to fetch unread-count');
@@ -82,7 +89,12 @@ export class NotificationsController {
   async markAsRead(@Param('id') id: string, @Res() res: Response) {
     try {
       const unreadCount = await this.notificationsService.markAsRead(+id);
-      return successResponse(res, 'Notification marked as read', unreadCount);
+      return successResponse(
+        res,
+        'Notification marked as read',
+        HttpStatus.OK,
+        unreadCount,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to mark as read');
@@ -104,6 +116,7 @@ export class NotificationsController {
       return successResponse(
         res,
         'All Notification marked as read',
+        HttpStatus.OK,
         markedNotifications,
       );
     } catch (error) {
