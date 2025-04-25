@@ -62,7 +62,7 @@ export class UsersController {
       );
     } catch (error) {
       this.logger.error(error.message);
-      return error(res, 401, error.message);
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -84,7 +84,7 @@ export class UsersController {
       return successResponse(res, 'User data found.', HttpStatus.OK, user);
     } catch (error) {
       this.logger.error(error.message);
-      return error(res, 401, error.message);
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -112,7 +112,7 @@ export class UsersController {
       );
     } catch (error) {
       this.logger.error(error.message);
-      return error(res, 401, error.message);
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -148,7 +148,7 @@ export class UsersController {
       );
     } catch (error) {
       this.logger.error(error.message);
-      return error(res, 401, error.message);
+      return errorResponse(res, 401, error.message);
     }
   }
 
@@ -176,7 +176,7 @@ export class UsersController {
       );
     } catch (error) {
       this.logger.error(error.message);
-      return error(res, 401, error.message);
+      return errorResponse(res, 401, error.message);
     }
   }
 }
