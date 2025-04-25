@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Inject,
   NotFoundException,
   Param,
@@ -53,7 +54,12 @@ export class UsersController {
   async users(@Res() res: Response) {
     try {
       const users = await this.usersService.users();
-      return successResponse(res, 'Users data retrieved.', users);
+      return successResponse(
+        res,
+        'Users data retrieved.',
+        HttpStatus.OK,
+        users,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return error(res, 401, error.message);
@@ -75,7 +81,7 @@ export class UsersController {
 
     try {
       const user = await this.usersService.searchUser(firstName, +page, +limit);
-      return successResponse(res, 'User data found.', user);
+      return successResponse(res, 'User data found.', HttpStatus.OK, user);
     } catch (error) {
       this.logger.error(error.message);
       return error(res, 401, error.message);
@@ -93,7 +99,17 @@ export class UsersController {
   async userById(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
     try {
       const user = await this.usersService.userById(id);
-      return successResponse(res, 'User found successfully.', user);
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${id} not found.`);
+      }
+
+      return successResponse(
+        res,
+        'User found successfully.',
+        HttpStatus.OK,
+        user,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return error(res, 401, error.message);
@@ -127,6 +143,7 @@ export class UsersController {
       return successResponse(
         res,
         'User data has been successfully updated.',
+        HttpStatus.OK,
         updatedUser,
       );
     } catch (error) {
@@ -151,7 +168,12 @@ export class UsersController {
       if (!deletedUser) {
         throw new NotFoundException(`User with ID ${id} not found.`);
       }
-      return successResponse(res, 'User deleted successfully.', deletedUser);
+      return successResponse(
+        res,
+        'User deleted successfully.',
+        HttpStatus.OK,
+        deletedUser,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return error(res, 401, error.message);
