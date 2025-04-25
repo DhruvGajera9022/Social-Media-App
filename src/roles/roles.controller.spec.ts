@@ -54,7 +54,7 @@ describe('RolesController', () => {
       await controller.create(dto, mockRes as Response);
 
       expect(rolesService.createRole).toHaveBeenCalledWith(dto);
-      // expect(mockRes.status).toHaveBeenCalledWith(201);
+      expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
         message: 'Role created successfully.',
@@ -71,7 +71,7 @@ describe('RolesController', () => {
       await controller.findAll(mockRes as Response);
 
       expect(rolesService.findAll).toHaveBeenCalled();
-      // expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
         message: 'Role retrieved successfully.',
