@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Inject,
   Param,
   ParseIntPipe,
@@ -26,7 +27,7 @@ import { AddCommentDTO } from 'src/comments/dto/add-comment.dto';
 import { Request, Response } from 'express';
 import { errorResponse, successResponse } from 'src/utils/response.util';
 import { EditCommentDTO } from './dto/edit-comment.dto';
-import { Logger } from 'winston';
+import { http, Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('Comments')
@@ -59,7 +60,12 @@ export class CommentsController {
         userId,
         commentPostDto,
       );
-      return successResponse(res, 'Comment added successfully', newComment);
+      return successResponse(
+        res,
+        'Comment added successfully',
+        HttpStatus.CREATED,
+        newComment,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -78,7 +84,12 @@ export class CommentsController {
   ) {
     try {
       const comments = await this.commentsService.getComments(id);
-      return successResponse(res, 'Comments retrieved successfully', comments);
+      return successResponse(
+        res,
+        'Comments retrieved successfully',
+        HttpStatus.OK,
+        comments,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -101,7 +112,12 @@ export class CommentsController {
         id,
         editCommentDto,
       );
-      return successResponse(res, 'Comment updated successfully', comments);
+      return successResponse(
+        res,
+        'Comment updated successfully',
+        HttpStatus.OK,
+        comments,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -120,7 +136,12 @@ export class CommentsController {
   ) {
     try {
       const comments = await this.commentsService.deleteComment(id);
-      return successResponse(res, 'Comment deleted successfully', comments);
+      return successResponse(
+        res,
+        'Comment deleted successfully',
+        HttpStatus.OK,
+        comments,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
