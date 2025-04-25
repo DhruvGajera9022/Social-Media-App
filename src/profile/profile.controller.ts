@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpStatus,
   Inject,
   Param,
   Patch,
@@ -50,7 +51,12 @@ export class ProfileController {
   async getProfile(@Req() req, @Res() res: Response) {
     try {
       const profile = await this.profileService.getProfile(+req.user.userId);
-      return successResponse(res, 'Profile fetched successfully', profile);
+      return successResponse(
+        res,
+        'Profile fetched successfully',
+        HttpStatus.OK,
+        profile,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to fetch profile data.');
@@ -74,7 +80,12 @@ export class ProfileController {
         +req.user.userId,
         editProfileDto,
       );
-      return successResponse(res, 'Profile edited successfully', editProfile);
+      return successResponse(
+        res,
+        'Profile edited successfully',
+        HttpStatus.OK,
+        editProfile,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to edit profile.');
@@ -124,7 +135,7 @@ export class ProfileController {
         userId,
         file,
       );
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to update profile-picture');
@@ -146,7 +157,7 @@ export class ProfileController {
       const userId = +req.user.userId;
       const { message } =
         await this.profileService.removeProfilePicture(userId);
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to remove the profile-picture');
@@ -170,7 +181,7 @@ export class ProfileController {
         +targetId,
         userId,
       );
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to send follow request.');
@@ -194,7 +205,7 @@ export class ProfileController {
         +requesterId,
         userId,
       );
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to accept the request.');
@@ -218,7 +229,7 @@ export class ProfileController {
         requesterId,
         +targetId,
       );
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to cancel follow request.');
@@ -242,7 +253,7 @@ export class ProfileController {
         +targetId,
         userId,
       );
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to unfollow user.');
@@ -265,6 +276,7 @@ export class ProfileController {
       return successResponse(
         res,
         'Successfully retrieved followers list.',
+        HttpStatus.OK,
         userFollowers,
       );
     } catch (error) {
@@ -289,6 +301,7 @@ export class ProfileController {
       return successResponse(
         res,
         'Successfully retrieved following list.',
+        HttpStatus.OK,
         userFollowing,
       );
     } catch (error) {
@@ -314,6 +327,7 @@ export class ProfileController {
       return successResponse(
         res,
         'Follow requests fetched successfully.',
+        HttpStatus.OK,
         followRequests,
       );
     } catch (error) {
@@ -341,7 +355,7 @@ export class ProfileController {
         userId,
         +targetId,
       );
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to block user.');
@@ -367,7 +381,7 @@ export class ProfileController {
         userId,
         +targetId,
       );
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to unblock user.');
@@ -394,7 +408,9 @@ export class ProfileController {
         userId,
         +targetId,
       );
-      return successResponse(res, 'Block status retrieved', { isBlocked });
+      return successResponse(res, 'Block status retrieved', HttpStatus.OK, {
+        isBlocked,
+      });
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to check user is blocked or not.');
@@ -417,6 +433,7 @@ export class ProfileController {
       return successResponse(
         res,
         'Blocked users retrieved successfully.',
+        HttpStatus.OK,
         blockedUsers,
       );
     } catch (error) {
@@ -448,6 +465,7 @@ export class ProfileController {
       return successResponse(
         res,
         'Mutual followers fetched successfully.',
+        HttpStatus.OK,
         mutualFollowers,
       );
     } catch (error) {
@@ -469,7 +487,7 @@ export class ProfileController {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.deactivateAccount(userId);
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to deactivate account.');
@@ -489,7 +507,7 @@ export class ProfileController {
     try {
       const userId = +req.user.userId;
       const { message } = await this.profileService.reactivateAccount(userId);
-      return successResponse(res, message);
+      return successResponse(res, message, HttpStatus.OK);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to reactivate account.');
@@ -513,7 +531,12 @@ export class ProfileController {
     try {
       const userId = +req.user.userId;
       const users = await this.profileService.searchUser(userId, query);
-      return successResponse(res, 'Search results fetched successfully', users);
+      return successResponse(
+        res,
+        'Search results fetched successfully',
+        HttpStatus.OK,
+        users,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to search user.');
@@ -544,7 +567,10 @@ export class ProfileController {
       const qrCode =
         await this.profileService.generateQrCodeDataURL(otpAuthUrl);
 
-      return successResponse(res, 'QR code generated', { secret, qrCode });
+      return successResponse(res, 'QR code generated', HttpStatus.OK, {
+        secret,
+        qrCode,
+      });
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(
@@ -600,7 +626,11 @@ export class ProfileController {
       // Enable the 2FA
       await this.profileService.enableTwoFactorAuth(user);
 
-      return successResponse(res, 'Two-factor authentication has been enabled');
+      return successResponse(
+        res,
+        'Two-factor authentication has been enabled',
+        HttpStatus.OK,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Fail to turn on 2FA');
@@ -639,6 +669,7 @@ export class ProfileController {
       return successResponse(
         res,
         'Two Factor Authentication Successfully',
+        HttpStatus.OK,
         login2FA,
       );
     } catch (error) {
@@ -655,7 +686,12 @@ export class ProfileController {
   async getProfileById(@Param('id') id: string, @Res() res: Response) {
     try {
       const profile = await this.profileService.getProfile(+id);
-      return successResponse(res, 'Profile fetched successfully', profile);
+      return successResponse(
+        res,
+        'Profile fetched successfully',
+        HttpStatus.OK,
+        profile,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 400, 'Failed to fetch profile data by id.');
