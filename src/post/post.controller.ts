@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Inject,
   Param,
   ParseIntPipe,
@@ -53,7 +54,12 @@ export class PostController {
   async getPosts(@Res() res: ExpressResponse) {
     try {
       const posts = await this.postService.getPosts();
-      return successResponse(res, 'Posts retrieved successfully', posts);
+      return successResponse(
+        res,
+        'Posts retrieved successfully',
+        HttpStatus.OK,
+        posts,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, 500, error.message);
@@ -77,6 +83,7 @@ export class PostController {
       return successResponse(
         res,
         'Bookmarked posts fetched successfully',
+        HttpStatus.OK,
         bookmarks,
       );
     } catch (error) {
@@ -101,7 +108,12 @@ export class PostController {
     try {
       const userId = req.user.userId;
       const post = await this.postService.getPostById(id, userId);
-      return successResponse(res, 'Post retrieved successfully', post);
+      return successResponse(
+        res,
+        'Post retrieved successfully',
+        HttpStatus.OK,
+        post,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -149,7 +161,12 @@ export class PostController {
         createPostDto,
         files,
       );
-      return successResponse(res, 'Post created successfully', newPost);
+      return successResponse(
+        res,
+        'Post created successfully',
+        HttpStatus.CREATED,
+        newPost,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -178,7 +195,12 @@ export class PostController {
         userId,
         editPostDto,
       );
-      return successResponse(res, 'Post edited successfully', editedPost);
+      return successResponse(
+        res,
+        'Post edited successfully',
+        HttpStatus.OK,
+        editedPost,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -209,7 +231,7 @@ export class PostController {
         ? 'Post pinned successfully'
         : 'Post unpinned successfully';
 
-      return successResponse(res, pinnedMessage, pinnedPost);
+      return successResponse(res, pinnedMessage, HttpStatus.OK, pinnedPost);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -232,7 +254,7 @@ export class PostController {
     try {
       const userId = req.user.userId;
       const { message, post } = await this.postService.likePost(id, userId);
-      return successResponse(res, message, post);
+      return successResponse(res, message, HttpStatus.OK, post);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -256,7 +278,12 @@ export class PostController {
     try {
       const userId = req.user.userId;
       const deletedPost = await this.postService.deletePost(id, userId);
-      return successResponse(res, 'Post deleted successfully', deletedPost);
+      return successResponse(
+        res,
+        'Post deleted successfully',
+        HttpStatus.OK,
+        deletedPost,
+      );
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
@@ -278,7 +305,7 @@ export class PostController {
     try {
       const userId = req.user.userId;
       const result = await this.postService.toggleBookmark(id, userId);
-      return successResponse(res, result.message, {
+      return successResponse(res, result.message, HttpStatus.OK, {
         bookmarked: result.bookmarked,
       });
     } catch (error) {
