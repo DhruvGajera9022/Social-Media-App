@@ -189,6 +189,7 @@ export class PostService {
     files: Express.Multer.File[],
   ) {
     const cachePostsKey = cacheKeys.posts();
+    const cacheProfileKey = cacheKeys.userProfileWithPosts(userId);
     const {
       title,
       content,
@@ -245,6 +246,7 @@ export class PostService {
       });
 
       await this.cacheManager.del(cachePostsKey);
+      await this.cacheManager.del(cacheProfileKey);
 
       return newPost;
     } catch (error) {
