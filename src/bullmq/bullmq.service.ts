@@ -14,15 +14,26 @@ export class BullmqService {
     postId: number,
     scheduleTime: string | Date,
   ): Promise<void> {
-    const scheduleDate = new Date(scheduleTime);
     const now = new Date();
+
+    let scheduleDate: Date;
+
+    if (typeof scheduleTime === 'string') {
+      // Assume format like "2025-04-28 15:13:00" (local time)
+      scheduleDate = new Date(scheduleTime.replace(' ', 'T'));
+    } else {
+      scheduleDate = scheduleTime;
+    }
 
     // this.logger.info(`Current time (local): ${now.toLocaleString()}`);
     // this.logger.info(`Current time (UTC): ${now.toISOString()}`);
-    // this.logger.info(`Schedule time (local): ${scheduleDate.toLocaleString()}`);
-    // this.logger.info(`Schedule time (UTC): ${scheduleDate.toISOString()}`);
+    // this.logger.info(
+    //   `Schedule time (local parsed): ${scheduleDate.toLocaleString()}`,
+    // );
+    // this.logger.info(
+    //   `Schedule time (UTC parsed): ${scheduleDate.toISOString()}`,
+    // );
 
-    // Calculate delay in milliseconds
     const delay = scheduleDate.getTime() - now.getTime();
 
     // this.logger.info(
@@ -30,9 +41,9 @@ export class BullmqService {
     // );
 
     if (delay <= 0) {
-      // this.logger.warn(
-      //   `Schedule time is in the past. Publishing immediately for post ID: ${postId}`,
-      // );
+      this.logger.warn(
+        `Schedule time is in the past. Publishing immediately for post ID: ${postId}`,
+      );
       await this.schedulerQueue.add(
         'publishScheduledPost',
         { postId },
@@ -41,7 +52,7 @@ export class BullmqService {
       return;
     }
 
-    const scheduledLocalTime = new Date(now.getTime() + delay);
+    // const scheduledLocalTime = new Date(now.getTime() + delay);
     // this.logger.info(
     //   `The post will be published locally at: ${scheduledLocalTime.toLocaleString()}`,
     // );
