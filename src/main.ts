@@ -77,13 +77,17 @@ async function bootstrap() {
   // Start the server
   await app.listen(process.env.PORT ?? 3000);
 
-  logger.log(
-    `🚀 Server running on: http://localhost:${process.env.PORT ?? 3000}`.bgWhite
-      .black,
-  );
-  logger.log(
-    `🚀 API Docs: http://localhost:${process.env.PORT ?? 3000}/api/docs`.bgWhite
-      .black,
-  );
+  if (process.env.NODE_ENV === 'development') {
+    logger.log(
+      `🚀 Server running on: http://localhost:${process.env.PORT ?? 3000}`
+        .bgWhite.black,
+    );
+    logger.log(
+      `🚀 API Docs: http://localhost:${process.env.PORT ?? 3000}/api/docs`
+        .bgWhite.black,
+    );
+  } else {
+    logger.log(`Server running on port ${process.env.PORT}`);
+  }
 }
 bootstrap();

@@ -43,6 +43,7 @@ model Users {
   bookmarks              Bookmarks[]
   notifications          Notifications[]  @relation("UserNotifications")
   notificationsTriggered Notifications[]  @relation("ActorNotifications")
+  CommentLikes           CommentLikes[]
 }
 
 model RefreshToken {
@@ -131,10 +132,21 @@ model Comments {
   userId     Int
   content    String
   created_at DateTime @default(now())
-  updated_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  post Posts @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post         Posts          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user         Users          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  CommentLikes CommentLikes[]
+}
+
+model CommentLikes {
+  commentId Int
+  userId    Int
+
+  comment Comments @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
 }
 
 model Bookmarks {
