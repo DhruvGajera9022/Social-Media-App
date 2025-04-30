@@ -127,12 +127,13 @@ model BlockList {
 }
 
 model Comments {
-  id         Int      @id @default(autoincrement())
-  postId     Int
-  userId     Int
-  content    String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  postId      Int
+  userId      Int
+  content     String
+  likes_count Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
   post         Posts          @relation(fields: [postId], references: [id], onDelete: Cascade)
   user         Users          @relation(fields: [userId], references: [id], onDelete: Cascade)

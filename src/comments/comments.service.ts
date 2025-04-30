@@ -170,4 +170,49 @@ export class CommentsService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  async likeComment(commentId: number, userId: number) {
+    try {
+      const comment = await this.prisma.comments.findUnique({
+        where: { id: commentId },
+      });
+      if (!comment) {
+        throw new NotFoundException('Comment not found');
+      }
+
+      // Check if user has already liked the comment
+      const existingLike = await this.prisma.commentLikes.findUnique({
+        where: { commentId_userId: { commentId, userId } },
+      });
+
+      if (existingLike) {
+        // Unlike the comment if already liked
+        const [updateComment] = await this.prisma.$transaction([
+          this.prisma.comments.update({
+            where: { id: commentId },
+            data: { likes_count: { decrement: 1 } },
+          }),
+          this.prisma.commentLikes.delete({
+            where: { commentId_userId: { commentId, userId } },
+          }),
+        ]);
+        return { message: 'Comment unliked', post: updateComment };
+      } else {
+        // Like the comment if not already liked
+        const [updateComment] = await this.prisma.$transaction([
+          this.prisma.comments.update({
+            where: { id: commentId },
+            data: { likes_count: { increment: 1 } },
+          }),
+          this.prisma.commentLikes.create({
+            data: { commentId, userId },
+          }),
+        ]);
+
+        return { message: 'Comment liked', post: updateComment };
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }

@@ -8,6 +8,7 @@ import {
   Inject,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Req,
@@ -27,7 +28,7 @@ import { AddCommentDTO } from 'src/comments/dto/add-comment.dto';
 import { Request, Response } from 'express';
 import { errorResponse, successResponse } from 'src/utils/response.util';
 import { EditCommentDTO } from './dto/edit-comment.dto';
-import { http, Logger } from 'winston';
+import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('Comments')
@@ -142,6 +143,35 @@ export class CommentsController {
         HttpStatus.OK,
         comments,
       );
+    } catch (error) {
+      this.logger.error(error.message);
+      return errorResponse(res, error.status || 500, error.message);
+    }
+  }
+
+  @ApiOperation({ summary: 'Like or unlike comment' })
+  @ApiParam({ name: 'id', required: true, description: 'Comment ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Comment liked/unliked successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Comment not found' })
+  @ApiResponse({ status: 500, description: 'Server error' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/like')
+  async likePost(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: { userId: number } },
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user.userId;
+      const { message, post } = await this.commentsService.likeComment(
+        id,
+        userId,
+      );
+      return successResponse(res, message, HttpStatus.OK, post);
     } catch (error) {
       this.logger.error(error.message);
       return errorResponse(res, error.status || 500, error.message);
