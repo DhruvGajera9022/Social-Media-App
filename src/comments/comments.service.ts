@@ -1,5 +1,6 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
+  ForbiddenException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -87,7 +88,7 @@ export class CommentsService {
     }
   }
 
-  async getComments(postId: number, userId: number) {
+  async getComments(postId: number) {
     const cacheCommentsKey = cacheKeys.postComments(postId);
     try {
       const cachedCommentData = await this.cacheManager.get(cacheCommentsKey);
@@ -107,7 +108,7 @@ export class CommentsService {
       // Get comments with user info
       const comments = await this.prisma.comments.findMany({
         where: { postId },
-        orderBy: { created_at: 'desc' },
+        orderBy: [{ pinned: 'desc' }, { created_at: 'desc' }],
         include: {
           user: {
             select: {
@@ -214,6 +215,38 @@ export class CommentsService {
 
         return { message: 'Comment liked', post: updateComment };
       }
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async pinComment(commentId: number, userId: number) {
+    try {
+      const comment = await this.prisma.comments.findUnique({
+        where: { id: commentId },
+        include: {
+          post: {
+            select: { userId: true },
+          },
+        },
+      });
+      if (!comment) {
+        throw new NotFoundException('Comment not found');
+      }
+
+      if (comment.post.userId !== userId) {
+        throw new ForbiddenException(
+          'Only the post owner can pin or unpin comments',
+        );
+      }
+
+      const cacheCommentsKey = cacheKeys.postComments(comment.postId);
+      await this.cacheManager.del(cacheCommentsKey);
+
+      return this.prisma.comments.update({
+        where: { id: commentId },
+        data: { pinned: !comment.pinned },
+      });
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

@@ -177,4 +177,35 @@ export class CommentsController {
       return errorResponse(res, error.status || 500, error.message);
     }
   }
+
+  @ApiOperation({ summary: 'Pin or unpin comment' })
+  @ApiParam({ name: 'id', required: true, description: 'Comment ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Comment pinned/unpinned successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - not comment owner' })
+  @ApiResponse({ status: 404, description: 'Comment not found' })
+  @ApiResponse({ status: 500, description: 'Server error' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/pin')
+  async pinPost(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: { userId: number } },
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user.userId;
+      const pinnedPost = await this.commentsService.pinComment(id, userId);
+      const pinnedMessage = pinnedPost.pinned
+        ? 'Comment pinned successfully'
+        : 'Comment unpinned successfully';
+
+      return successResponse(res, pinnedMessage, HttpStatus.OK, pinnedPost);
+    } catch (error) {
+      this.logger.error(error.message);
+      return errorResponse(res, error.status || 500, error.message);
+    }
+  }
 }
