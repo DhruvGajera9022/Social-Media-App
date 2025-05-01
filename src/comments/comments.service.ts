@@ -87,7 +87,7 @@ export class CommentsService {
     }
   }
 
-  async getComments(postId: number) {
+  async getComments(postId: number, userId: number) {
     const cacheCommentsKey = cacheKeys.postComments(postId);
     try {
       const cachedCommentData = await this.cacheManager.get(cacheCommentsKey);
@@ -184,6 +184,9 @@ export class CommentsService {
       const existingLike = await this.prisma.commentLikes.findUnique({
         where: { commentId_userId: { commentId, userId } },
       });
+
+      const cacheCommentsKey = cacheKeys.postComments(comment.postId);
+      await this.cacheManager.del(cacheCommentsKey);
 
       if (existingLike) {
         // Unlike the comment if already liked
